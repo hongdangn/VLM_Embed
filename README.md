@@ -39,5 +39,9 @@ bash download_traindata2.sh
 bash scripts/sft.sh
 ```
 
+### 2. KD training:
+```
+bash scripts/train_ddp.sh
+```
 ## Acknowledgement
 - We have adapted code from [VLM2Vec]([https://github.com/TIGER-AI-Lab/VLM2Vec]) and [B3](https://github.com/raghavlite/B3)
