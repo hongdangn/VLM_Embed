@@ -1,0 +1,29 @@
+DropoutAddRMSNorm of flash_attn is not installed!!!
+Loaded 2550 samples from TIGER-Lab/MMEB-train with subsets ['HatefulMemes']
+Load student with lora rank: 64
+Student use lora: True
+Detected model type: llava_qwen2
+Determined model backbone: llava_qwen2
+Student model built.
+Load teacher with lora rank: 8
+Teacher use lora: True
+Detected model type: qwen2_vl
+Determined model backbone: qwen2_vl
+Teacher model loaded.
+Projector t2s_img created with structure: Sequential(
+  (0): Linear(in_features=1536, out_features=896, bias=True)
+)
+Projector t2s_txt created with structure: Sequential(
+  (0): Linear(in_features=1536, out_features=896, bias=True)
+)
+Projectors set.
+Processor load here for LLAVA-QWEN2
+Student processor loaded.
+Load Qwen2-VL processor
+>>>>>>>>>>>>>>>>>>>>>>>> Processor raghavlite/B3_Qwen2_2B
+ImageProcessor type: <class 'transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor'>
+teacher processor loaded here.
+Teacher processor loaded.
+Projector parameters added to optimizer.
+Initialized wandb
+Device: cuda:0

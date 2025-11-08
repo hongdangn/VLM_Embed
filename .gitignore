@@ -1,0 +1,13 @@
+*.jpg
+*.png
+*.mp4
+*.jpeg
+/wandb
+/training
+/vlm2vec_train
+/encode_output_path
+/test
+/test-save
+__pycache__
+.venv
+vlm
