@@ -35,8 +35,8 @@ logging.getLogger('numba').setLevel(logging.WARNING)
 
 load_dotenv()
 
-token = os.getenv("HF_TOKEN")
-login(token=token)
+# token = os.getenv("HF_TOKEN")
+# login(token=token)
 
 wandb.login(key="810a71e03133ccddd00133f1fe9d2cd0f8001b4e")
 
@@ -429,7 +429,7 @@ def main():
     training_args: TrainingArguments
     
     train_dataset = prepare_dataset(data_args, model_args)
-    distiller = Distiller(model_args, training_args, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+    distiller = Distiller(model_args, training_args)
     collator = DistillationCollator(
         student_processor=distiller.get_student_processor(),
         teacher_processor=distiller.get_teacher_processor(),

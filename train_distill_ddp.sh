@@ -15,18 +15,18 @@ torchrun --standalone \
     --teacher_model_name "raghavlite/B3_Qwen2_2B" \
     --lora True \
     --teacher_lora True \
-    --lora_r 64 \
+    --lora_r 32 \
     --teacher_lora_r 8 \
     --teacher_pooling "eos" \
     --teacher_backbone "qwen2_vl" \
     --model_backbone "llava_qwen2" \
     --pooling "eos" \
     --dataset_name "TIGER-Lab/MMEB-train" \
-    --subset_name "WebQA" \
+    --subset_name "HatefulMemes" "WebQA" "VisualNews_t2i" "CIRR" \
     --dataset_split "original" \
     --image_dir "vlm2vec_train/MMEB-train" \
     --output_dir "training/dang_propose" \
-    --per_device_train_batch_size 16 \
+    --per_device_train_batch_size 2 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-5 \
     --num_train_epochs 1 \

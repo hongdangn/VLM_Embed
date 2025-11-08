@@ -24,6 +24,13 @@ from accelerate import Accelerator
 from huggingface_hub import HfApi, HfFolder, Repository, create_repo
 from transformers import AutoConfig, AutoProcessor, AutoTokenizer, HfArgumentParser
 from transformers.integrations import HfDeepSpeedConfig
+import logging
+
+# Set the logging level for Numba's CUDA driver
+logging.getLogger('numba.cuda.cudadrv.driver').setLevel(logging.WARNING)
+
+# You may also want to set the general Numba logger level
+logging.getLogger('numba').setLevel(logging.WARNING)
 # Todo
 # wandb.login(key="f5a118efa8813fb4edc7f6b8a7ab5c9c5f9e1ece")
 
@@ -84,7 +91,9 @@ class Trainer:
         self.model_args = model_args
         self.training_args = training_args
         
-        self.distiller = DDP(self.distiller, device_ids=[self.gpu_id])
+        self.distiller = DDP(self.distiller, 
+                             device_ids=[self.gpu_id],
+                             find_unused_parameters=True)
     
     def _debug_batch_devices(self, obj, prefix=""):
         if obj is None:
@@ -119,7 +128,8 @@ class Trainer:
                             disable=not dist.get_rank() == 0)
         for batch_idx, batch in enumerate(self.train_data):
             batch = to_device(batch, self.device)
-            loss_dict = self.distiller(self.criterion, batch)
+            with torch.autocast(enabled=True, dtype=torch.bfloat16, device_type='cuda'):
+                loss_dict = self.distiller(self.criterion, batch)
 
             total_loss = loss_dict['total_loss'] / self.training_args.gradient_accumulation_steps
             contrastive_loss = loss_dict['contrastive_loss']

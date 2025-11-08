@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn 
 import torch.distributed as dist
 import torch.nn.functional as F
+from torch import Tensor
 from .soft_DTW import SoftDTW
 # import ot
 # ot.backend.get_backend('pytorch')
@@ -20,7 +21,23 @@ class StrongerKD(nn.Module):
 
         self.cross_entropy_loss = nn.CrossEntropyLoss()
         self.mse_loss = nn.MSELoss(reduction='mean')
-        self.sdtw = SoftDTW(use_cuda=True, gamma=0.01)
+        self.sdtw = SoftDTW(use_cuda=True, gamma=0.001)
+
+        if dist.is_initialized():
+            self.world_size = dist.get_world_size()
+            self.process_rank = dist.get_rank()
+        else:
+            self.world_size = 1
+            self.process_rank = 0
+    
+    def _dist_gather_tensor(self, t: Tensor):
+        t = t.contiguous()
+        all_tensors = [torch.empty_like(t) for _ in range(self.world_size)]
+        dist.all_gather(all_tensors, t)
+        all_tensors[self.process_rank] = t
+        all_tensors = torch.cat(all_tensors, dim=0)
+        return all_tensors
+    
 
     def forward(self, distiller, input_data):
         self.distiller = distiller
@@ -42,14 +59,18 @@ class StrongerKD(nn.Module):
         s_pos_reps, s_pos_hidden_states, s_pos_img_feats, s_pos_layers_embeds, s_pos_attention = \
                                                                     student_model.encode_input(input_data['student_inputs']['pos'])
 
-        # s_qry_hidden_states, s_qry_img_feats = torch.stack(s_qry_hidden_states, dim=0), torch.stack(s_qry_img_feats, dim=0)
-        # s_pos_hidden_states, s_pos_img_feats = torch.stack(s_pos_hidden_states, dim=0), torch.stack(s_pos_img_feats, dim=0)
+        if self.world_size > 1:
+            all_student_qry_reps = self._dist_gather_tensor(s_qry_reps)
+            all_student_pos_reps = self._dist_gather_tensor(s_pos_reps)
+        else:
+            all_student_qry_reps = s_qry_reps
+            all_student_pos_reps = s_pos_reps
 
         ## contrastive
-        scores = student_model.compute_similarity(s_qry_reps, s_pos_reps)
-        scores = scores.view(s_qry_reps.size(0), -1)
+        scores = student_model.compute_similarity(all_student_qry_reps, all_student_pos_reps)
+        scores = scores.view(all_student_qry_reps.size(0), -1)
         target = torch.arange(scores.size(0), device=scores.device, dtype=torch.long)
-        target = target * (s_qry_reps.size(0) // s_pos_reps.size(0))
+        target = target * (all_student_qry_reps.size(0) // all_student_pos_reps.size(0))
         contrastive_loss = self.cross_entropy_loss(scores / self.distiller.temperature, target)
 
         ## image alignments
@@ -198,8 +219,13 @@ class StrongerKD(nn.Module):
             proj_t_hidden_state = self.distiller.t2s[l - start_layer](t_hidden_states[scale * l]) # (b, m, emb_dim)
 
             for b in range(s_dist.size(0)):
-                cost_matrix = torch.cdist(s_hidden_state[b].unsqueeze(0), 
-                                          proj_t_hidden_state[b].unsqueeze(0)).squeeze(0)
+                # cost_matrix = 1 - torch.matmul(s_hidden_state[b], proj_t_hidden_state[b].T) # (n, m)
+                cost_matrix = torch.cdist(
+                    s_hidden_state[b].unsqueeze(0).to(torch.float32), 
+                    proj_t_hidden_state[b].unsqueeze(0).to(torch.float32),
+                    p=2 
+                ).squeeze(0).to(torch.bfloat16)  # (n, m)
+                
                 cost_matrix = cost_matrix / cost_matrix.mean()
 
                 transport = self.sinkhorn(s_dist[b], t_dist[b], cost_matrix) 
@@ -288,17 +314,18 @@ class StrongerKD(nn.Module):
                         num_s_img_tokens = s_img_feats[b].size(0)
                         num_t_img_tokens = t_img_feats[b].size(0)
 
-                        s_img_hidden_states = F.normalize(s_hidden_states[l][b][:num_s_img_tokens])
-                        s_text_hidden_states = F.normalize(s_hidden_states[l][b][num_s_img_tokens:])
+                        s_img_hidden_states = F.normalize(s_hidden_states[l][b][:num_s_img_tokens]).to(torch.float32)
+                        s_text_hidden_states = F.normalize(s_hidden_states[l][b][num_s_img_tokens:]).to(torch.float32)
 
-                        proj_t_img_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][:num_t_img_tokens]))
-                        proj_t_text_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][num_t_img_tokens:]))
+                        proj_t_img_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][:num_t_img_tokens])).to(torch.float32)
+                        proj_t_text_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][num_t_img_tokens:])).to(torch.float32)
+                        
                         
                         loss += 0.5 * self.sdtw(s_img_hidden_states.unsqueeze(0), proj_t_text_hidden_states.unsqueeze(0)).mean()
                         loss += 0.5 * self.sdtw(s_text_hidden_states.unsqueeze(0), proj_t_img_hidden_states.unsqueeze(0)).mean()
                     cur_idx_img += 1
-
-        return loss / (batch_size * self.distiller.num_chosen_hidden_states)
+        loss = loss.to(torch.bfloat16)
+        return loss / batch_size
     
     def simple_kd_logit_loss(self, student_qry_reps, student_pos_reps, teacher_qry_reps, teacher_pos_reps):
             projector_teacher_qry_reps = self.distiller.last_layer_projector(teacher_qry_reps)
