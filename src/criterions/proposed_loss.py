@@ -270,8 +270,7 @@ class StrongerKD(nn.Module):
         """
 
         loss = 0.0
-        cur_idx_qry_img = 0
-        cur_idx_pos_img = 0
+        cur_idx_img = 0
         num_student_layers = len(s_hidden_states)
         num_teacher_layers = len(t_hidden_states)
         scale = num_teacher_layers // num_student_layers
@@ -281,22 +280,23 @@ class StrongerKD(nn.Module):
         if s_img_feats is None or t_img_feats is None:
             return loss
         
-        for b in range(batch_size):
-            if s_img_feats[b] is not None and t_img_feats[b] is not None:
+        if s_img_feats is not None and t_img_feats is not None:
+            for b in range(batch_size):
+                if cur_idx_img < len(s_img_feats) and cur_idx_img < len(t_img_feats):
+                    for l in range(start_layer, num_student_layers):
 
-                for l in range(start_layer, num_student_layers):
+                        num_s_img_tokens = s_img_feats[b].size(0)
+                        num_t_img_tokens = t_img_feats[b].size(0)
 
-                    num_s_img_tokens = s_img_feats[b].size(0)
-                    num_t_img_tokens = t_img_feats[b].size(0)
+                        s_img_hidden_states = F.normalize(s_hidden_states[l][b][:num_s_img_tokens])
+                        s_text_hidden_states = F.normalize(s_hidden_states[l][b][num_s_img_tokens:])
 
-                    s_img_hidden_states = F.normalize(s_hidden_states[l][b][:num_s_img_tokens])
-                    s_text_hidden_states = F.normalize(s_hidden_states[l][b][num_s_img_tokens:])
-
-                    proj_t_img_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][:num_t_img_tokens]))
-                    proj_t_text_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][num_t_img_tokens:]))
-                    
-                    loss += 0.5 * self.sdtw(s_img_hidden_states.unsqueeze(0), proj_t_text_hidden_states.unsqueeze(0)).mean()
-                    loss += 0.5 * self.sdtw(s_text_hidden_states.unsqueeze(0), proj_t_img_hidden_states.unsqueeze(0)).mean()
+                        proj_t_img_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][:num_t_img_tokens]))
+                        proj_t_text_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][num_t_img_tokens:]))
+                        
+                        loss += 0.5 * self.sdtw(s_img_hidden_states.unsqueeze(0), proj_t_text_hidden_states.unsqueeze(0)).mean()
+                        loss += 0.5 * self.sdtw(s_text_hidden_states.unsqueeze(0), proj_t_img_hidden_states.unsqueeze(0)).mean()
+                    cur_idx_img += 1
 
         return loss / (batch_size * self.distiller.num_chosen_hidden_states)
     

@@ -25,10 +25,10 @@ from transformers.integrations import HfDeepSpeedConfig
 from huggingface_hub import login
 from dotenv import load_dotenv
 
-token=os.getenv("HF_TOKEN")
-login(token=token)
+# token=os.getenv("HF_TOKEN")
+# login(token=token)
 
-wandb.login(key="810a71e03133ccddd00133f1fe9d2cd0f8001b4e")
+# wandb.login(key="810a71e03133ccddd00133f1fe9d2cd0f8001b4e")
 
 def push_to_hub(repo_name=None, token=None, commit_message="Upload model", 
                 local_dir="./temp_model", private=False):
@@ -194,15 +194,15 @@ def finetune(
                 "lr": f"{lr_scheduler.get_last_lr()[0]:.6f}",
             })
             progress_bar.update(1)
-            if "wandb" in training_args.report_to:
-                wandb.log({
-                    "train/loss": batch_loss,
-                    "train/contrastive_loss": batch_contrastive_loss,
-                    # "train/kd_loss": batch_kd_loss,
-                    "train/lr": lr_scheduler.get_last_lr()[0],
-                    "train/epoch": epoch + 1,
-                    "train/global_step": step,
-                })
+            # if "wandb" in training_args.report_to:
+            #     wandb.log({
+            #         "train/loss": batch_loss,
+            #         "train/contrastive_loss": batch_contrastive_loss,
+            #         # "train/kd_loss": batch_kd_loss,
+            #         "train/lr": lr_scheduler.get_last_lr()[0],
+            #         "train/epoch": epoch + 1,
+            #         "train/global_step": step,
+            #     })
                     
                 #     logging_output['micro_step_time'] = []
                 #     logging_output['step_time'] = []
@@ -216,13 +216,13 @@ def finetune(
             f"Avg Contrastive Loss: {avg_contrastive_loss:.4f} "
         )
             
-        if "wandb" in training_args.report_to:
-            wandb.log({
-                "epoch/avg_loss": avg_epoch_loss,
-                "epoch/avg_contrastive_loss": avg_contrastive_loss,
-                # "epoch/avg_kd_loss": avg_kd_loss,
-                "epoch/epoch": epoch + 1,
-            })
+        # if "wandb" in training_args.report_to:
+        #     wandb.log({
+        #         "epoch/avg_loss": avg_epoch_loss,
+        #         "epoch/avg_contrastive_loss": avg_contrastive_loss,
+        #         # "epoch/avg_kd_loss": avg_kd_loss,
+        #         "epoch/epoch": epoch + 1,
+        #     })
             # Save checkpoint
         if training_args.save_strategy == "epoch":
             ckpt_dir = os.path.join(training_args.output_dir, f"checkpoint-epoch{epoch + 1}")
@@ -254,11 +254,11 @@ def finetune(
             finally:
                 pass
 
-            push_to_hub(
-                repo_name="dangnguyens1/sft-fastvlm-1e",
-                token=token,
-                local_dir=ckpt_dir,
-            )
+            # push_to_hub(
+            #     repo_name="dangnguyens1/sft-fastvlm-1e",
+            #     token=token,
+            #     local_dir=ckpt_dir,
+            # )
 
             print_rank(f"Epoch {epoch + 1} finished.")
 
@@ -294,14 +294,14 @@ def finetune(
             finally:
                 pass
 
-            push_to_hub(
-                repo_name="dangnguyens1/sft-fastvlm-final_e",
-                token=token,
-                local_dir=ckpt_dir,
-            )
+            # push_to_hub(
+            #     repo_name="dangnguyens1/sft-fastvlm-final_e",
+            #     token=token,
+            #     local_dir=ckpt_dir,
+            # )
 
-        if "wandb" in training_args.report_to:
-            wandb.finish()
+        # if "wandb" in training_args.report_to:
+        #     wandb.finish()
 
     return logging_output
 
