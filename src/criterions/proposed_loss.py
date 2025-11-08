@@ -54,26 +54,30 @@ class StrongerKD(nn.Module):
 
         ## image alignments
         img_align_loss = 0.0
+        cur_idx_qry_img = 0
+        cur_idx_pos_img = 0
         batch_size = s_qry_reps.size(0)
 
         for i in range(batch_size):
             if s_qry_img_feats is not None and t_qry_img_feats is not None:
-                if s_qry_img_feats[i] is not None and t_qry_img_feats[i] is not None:
+                if cur_idx_qry_img < len(s_qry_img_feats) and cur_idx_qry_img < len(t_qry_img_feats):
                     tmp_s_qry_img_feats = F.normalize(s_qry_img_feats[i], p=2, dim=-1)
                     tmp_t_qry_img_feats = self.distiller.t2s_img_align(t_qry_img_feats[i])
 
                     tmp_t_qry_image_features = F.normalize(tmp_t_qry_img_feats, p=2, dim=-1)
 
                     img_align_loss += self.alignment_loss_mmd(tmp_t_qry_image_features, tmp_s_qry_img_feats)
+                    cur_idx_qry_img += 1
 
             if s_pos_img_feats is not None and t_pos_img_feats is not None:
-                if s_pos_img_feats[i] is not None and t_pos_img_feats[i] is not None:
+                if cur_idx_pos_img < len(s_pos_img_feats) and cur_idx_pos_img < len(t_pos_img_feats):
                     tmp_s_pos_img_feats = F.normalize(s_pos_img_feats[i], p=2, dim=-1)
                     tmp_t_pos_img_feats = self.distiller.t2s_img_align(t_pos_img_feats[i])
                     
                     tmp_t_pos_image_features = F.normalize(tmp_t_pos_img_feats, p=2, dim=-1)
 
                     img_align_loss += self.alignment_loss_mmd(tmp_t_pos_image_features, tmp_s_pos_img_feats)
+                    cur_idx_pos_img += 1
 
         img_align_loss = img_align_loss / batch_size
 
@@ -266,6 +270,8 @@ class StrongerKD(nn.Module):
         """
 
         loss = 0.0
+        cur_idx_qry_img = 0
+        cur_idx_pos_img = 0
         num_student_layers = len(s_hidden_states)
         num_teacher_layers = len(t_hidden_states)
         scale = num_teacher_layers // num_student_layers

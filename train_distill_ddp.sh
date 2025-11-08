@@ -4,12 +4,13 @@
 NUM_GPUS_PER_NODE=1
 
 # Đường dẫn tới file script training của bạn
-TRAIN_SCRIPT="train_distill_no_deepspeed.py"
+TRAIN_SCRIPT="train_distill_ddp.py"
 
 # =========================================================================
 # Dùng torchrun để khởi chạy
 # =========================================================================
-python $TRAIN_SCRIPT \
+torchrun --standalone \
+    --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
     --model_name "apple/FastVLM-0.5B" \
     --teacher_model_name "raghavlite/B3_Qwen2_2B" \
     --lora True \
@@ -21,11 +22,11 @@ python $TRAIN_SCRIPT \
     --model_backbone "llava_qwen2" \
     --pooling "eos" \
     --dataset_name "TIGER-Lab/MMEB-train" \
-    --subset_name "WebQA" \
+    --subset_name "ImageNet_1K" "N24News" "HatefulMemes" "VOC2007" "SUN397" "OK-VQA" "A-OKVQA" "DocVQA" "InfographicsVQA" "ChartQA" "Visual7W" "VisDial" "CIRR" "VisualNews_t2i" "VisualNews_i2t" "MSCOCO_i2t" "MSCOCO_t2i" "NIGHTS" "WebQA" "MSCOCO" \
     --dataset_split "original" \
     --image_dir "vlm2vec_train/MMEB-train" \
-    --output_dir "training/dang_propose" \
-    --per_device_train_batch_size 2 \
+    --output_dir "training/propose_ddp_V" \
+    --per_device_train_batch_size 16 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-5 \
     --num_train_epochs 1 \
@@ -41,7 +42,7 @@ python $TRAIN_SCRIPT \
     --warmup_ratio 0.03 \
     --report_to "wandb" \
     --kd_weight 0.3 \
-    --kd_loss_type "dang_propose" \
+    --kd_loss_type "proposal_dtw" \
     --image_resolution "low" \
     --projector_config_path "./config/projector_config.json" \
     --projector_lr 5e-5 \

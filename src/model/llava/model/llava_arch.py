@@ -240,12 +240,20 @@ class LlavaMetaForCausalLM(ABC):
         new_labels = []
         cur_image_idx = 0
         output_image_features = []
+
+
+        num_img = []
+        for img in images:
+            if img is not None:
+                num_img.append(img.shape[0])
+            else:
+                num_img.append(0)
+
         for batch_idx, cur_input_ids in enumerate(input_ids):
             num_images = (cur_input_ids == IMAGE_TOKEN_INDEX).sum()
             if num_images == 0:
                 # cur_image_features = image_features[cur_image_idx]
                 cur_input_embeds_1 = self.get_model().embed_tokens(cur_input_ids)
-                output_image_features.append(None)
                 # cur_input_embeds = torch.cat([cur_input_embeds_1, cur_image_features[0:0]], dim=0)
                 cur_input_embeds = cur_input_embeds_1
                 new_input_embeds.append(cur_input_embeds)
