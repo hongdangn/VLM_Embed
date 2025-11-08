@@ -140,6 +140,7 @@ class LlavaMetaForCausalLM(ABC):
 
     def encode_images(self, images):
         image_features = self.get_model().get_vision_tower()(images)
+        image_features = image_features.to(dtype=torch.bfloat16)
         image_features = self.get_model().mm_projector(image_features)
         # print("Image features shape:", image_features.shape)
         return image_features
