@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.distributed as dist
 import torch.nn.functional as F
 from .soft_DTW import SoftDTW
-import ot
+# import ot
 # ot.backend.get_backend('pytorch')
 
 class StrongerKD(nn.Module):

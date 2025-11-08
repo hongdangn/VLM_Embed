@@ -115,11 +115,11 @@ def finetune(
     model.train()
     num_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print_rank(f"Number of parameters in student model: {num_trainable}")
-    wandb.init(
-        project="dang_sft",
-        # name=f"finetune-{model_args.model_backbone}-{data_args.subset_name}",
-        # config={**vars(model_args), **vars(data_args), **vars(training_args)},  
-    )
+    # wandb.init(
+    #     project="dang_sft",
+    #     # name=f"finetune-{model_args.model_backbone}-{data_args.subset_name}",
+    #     # config={**vars(model_args), **vars(data_args), **vars(training_args)},  
+    # )
     
     step = 0
     logging_output = {

@@ -37,7 +37,6 @@ python $TRAIN_SCRIPT \
     --normalize True \
     --lr_scheduler_type "cosine" \
     --warmup_ratio 0.03 \
-    --report_to "wandb" \
     --image_resolution low \
     --projector_config_path "./config/projector_config.json" \
     --projector_lr 5e-5 \

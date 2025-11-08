@@ -33,7 +33,6 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
     --normalize True \
     --lr_scheduler_type "cosine" \
     --warmup_ratio 0.03 \
-    --report_to "wandb" \
     --image_resolution mid \
     --projector_config_path "./config/projector_config.json" \
     --projector_lr 5e-5 \

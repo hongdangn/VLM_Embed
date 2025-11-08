@@ -1,14 +1,14 @@
-# torch
+torch==2.7.1
 numpy==1.26.4
-# torchvision
+torchvision==0.22.1
 transformers==4.56.1
 POT
 huggingface-hub
-peft
-accelerate
+peft==0.17.1
+accelerate=1.10.1
 numba
 python-dotenv
-datasets
+datasets==4.1.1
 scipy
 tqdm
 wandb
@@ -21,8 +21,6 @@ scikit-image
 qwen_vl_utils
 ray
 timm
-torch
-torchvision
 sentencepiece
 opencv-python
 decord
