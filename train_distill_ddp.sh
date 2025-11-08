@@ -22,7 +22,7 @@ torchrun --standalone \
     --model_backbone "llava_qwen2" \
     --pooling "eos" \
     --dataset_name "TIGER-Lab/MMEB-train" \
-    --subset_name "HatefulMemes" "WebQA" "VisualNews_t2i" "CIRR" \
+    --subset_name "HatefulMemes" "WebQA" "CIRR" \
     --dataset_split "original" \
     --image_dir "vlm2vec_train/MMEB-train" \
     --output_dir "training/dang_propose" \

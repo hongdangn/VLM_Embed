@@ -23,7 +23,7 @@ from src.model.vlm_backbone.qwen2_5_vl_tokenselection import \
 from src.model.vlm_backbone.qwen2_vl_tokenselection import \
     Qwen2VLForConditionalGeneration as Qwen2VLTokenSelectionForConditionalGeneration, \
     Qwen2VLProcessor as Qwen2VLTokenSelectionProcessor
-from src.model.vlm_backbone.internvideo2.modeling_internvideo2 import InternVideo2_Stage2
+# from src.model.vlm_backbone.internvideo2.modeling_internvideo2 import InternVideo2_Stage2
 
 from src.model.llava.model.language_model.llava_qwen import LlavaQwen2ForCausalLM
 from src.model.llava.processing_fastvlm import FastVLMProcessor
@@ -107,7 +107,7 @@ backbone2model = {
     QWEN2_5_VL: Qwen2_5_VLForConditionalGeneration,
     QWEN2_VL_TOKENSELECTION: Qwen2VLTokenSelectionForConditionalGeneration,
     QWEN2_5_VL_TOKENSELECTION: Qwen2_5_VL_TokenSelectionForConditionalGeneration,
-    INTERNVIDEO2: InternVideo2_Stage2,
+    # INTERNVIDEO2: InternVideo2_Stage2,
     LLAVA_QWEN2: LlavaQwen2ForCausalLM
 }
 
