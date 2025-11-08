@@ -25,6 +25,20 @@ logger = logging.get_logger(__name__)
 def expand2square(pil_img, background_color):
     pil_img = pil_img.convert("RGB")
     width, height = pil_img.size
+    MIN_SIZE = 32
+
+    if width < MIN_SIZE or height < MIN_SIZE:
+        new_width = max(width, MIN_SIZE)
+        new_height = max(height, MIN_SIZE)
+        
+        result = Image.new(pil_img.mode, (new_width, new_height), background_color)
+        x_offset = (new_width - width) // 2
+        y_offset = (new_height - height) // 2
+        result.paste(pil_img, (x_offset, y_offset))
+        pil_img = result
+        
+        width, height = pil_img.size
+        
     if width == height:
         return pil_img
     elif width > height:
@@ -70,6 +84,7 @@ class FastVLMProcessor(ProcessorMixin):
         image_tensors = []
         for image in images:
             if image is not None: 
+                image = image.convert("RGB")
                 image = expand2square(image, tuple(int(x*255) for x in self.image_processor.image_mean))
                 image = self.image_processor.preprocess(image, return_tensors='pt')['pixel_values'][0]
                 image_tensors.append(image)

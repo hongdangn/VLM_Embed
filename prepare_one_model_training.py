@@ -38,17 +38,39 @@ from PIL import Image
 def process_image(image, resolution, max_dim=1344):
     if image is None:
         return None
+
+    width, height = image.size
+    max_side = max(width, height)
+
     if resolution == "high":
-        image = image.resize((1344, 1344))
+        target_max = 1344
     elif resolution == "mid":
-        image = image.resize((672, 672))
+        target_max = 672
     elif resolution == "low":
-        image = image.resize((128, 128))
+        target_max = 448
     else:
-        cur_max_dim = max(image.size)
-        if cur_max_dim > max_dim:
-            image = image.resize((max_dim, max_dim))
+        target_max = max_dim
+
+    # Tính tỉ lệ scale sao cho cạnh lớn nhất = target_max
+    if max_side > target_max:
+        scale = target_max / max_side
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        image = image.resize((new_width, new_height))
+
     return image
+
+POS_MOD_CLASS_LABEL = "Represent the class label: "
+POS_MOD_IMAGE_CAPTION = "Represent the image caption: "
+POS_MOD_ANSWER = "Represent the answer: "
+
+POS_MOD_DICT = {
+                "ImageNet_1K": POS_MOD_CLASS_LABEL,"HatefulMemes":POS_MOD_CLASS_LABEL,"SUN397":POS_MOD_CLASS_LABEL,"N24News":POS_MOD_CLASS_LABEL,"VOC2007":POS_MOD_CLASS_LABEL, "Place365":POS_MOD_CLASS_LABEL,"ImageNet-A":POS_MOD_CLASS_LABEL,"ImageNet-R":POS_MOD_CLASS_LABEL,"ObjectNet":POS_MOD_CLASS_LABEL,"Country211":POS_MOD_CLASS_LABEL,
+                
+                "OK-VQA":POS_MOD_ANSWER, "A-OKVQA":POS_MOD_ANSWER, "DocVQA":POS_MOD_ANSWER, "InfographicsVQA":POS_MOD_ANSWER, "ChartQA":POS_MOD_ANSWER, "Visual7W":POS_MOD_ANSWER,"ScienceQA":POS_MOD_ANSWER, "GQA":POS_MOD_ANSWER, "TextVQA":POS_MOD_ANSWER, "VizWiz":POS_MOD_ANSWER,
+                
+                "MSCOCO_i2t":POS_MOD_IMAGE_CAPTION, "VisualNews_i2t":POS_MOD_IMAGE_CAPTION,
+                }
 
 class OneModelTrainer(nn.Module):
     def __init__(self, model_args, training_args, device):
@@ -143,8 +165,17 @@ class TrainOneModelDataset(Dataset):
                 subset,
                 split=f"{self.data_args.dataset_split}"
             )
+            if subset == "WebQA" and "qry" in subset_data.column_names:
+                subset_data = subset_data.map(
+                    lambda x: {"qry": x["qry"].replace("<|image_1|>", "").strip()}
+                )
+                print_rank("Preprocessed WebQA to remove <image_1> tokens in queries.")
+
             subset_data = subset_data.select(range(int(self.percentage * len(subset_data))))
+            subset_data = subset_data.add_column("pos_text_instruction", [POS_MOD_DICT.get(subset, "") + text for text in subset_data['pos_text']])
             subset_data = subset_data.remove_columns(set(['neg_text', 'neg_image_path']) & set(subset_data.column_names))
+            subset_data = subset_data.remove_columns(set(subset_data.column_names) - set(['qry', 'qry_image_path', 'pos_image_path', 'pos_text_instruction']))
+            subset_data = subset_data.rename_column("pos_text_instruction", "pos_text")
             train_data.append(subset_data)
             
         self.train_data = concatenate_datasets(train_data)

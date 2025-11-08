@@ -19,12 +19,12 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
     --lora_r 64 \
     --pooling "eos" \
     --dataset_name "TIGER-Lab/MMEB-train" \
-    --subset_name "HatefulMemes" \
+    --subset_name "HatefulMemes" "WebQA" "CIRR" \
     --dataset_split "original" \
     --model_backbone "llava_qwen2" \
     --image_dir "./vlm2vec_train/MMEB-train/" \
     --output_dir "training/no_deepspeed_sft" \
-    --per_device_train_batch_size 4 \
+    --per_device_train_batch_size 8 \
     --gradient_accumulation_steps 2 \
     --learning_rate 1e-5 \
     --num_train_epochs 1 \

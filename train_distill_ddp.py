@@ -59,6 +59,9 @@ def prepare_dataset(data_args, model_args):
     dataset = DistillationDataset(data_args, model_args)
     return dataset
 
+def is_main_process():
+    return (not dist.is_initialized()) or dist.get_rank() == 0
+
 def to_device(obj, device):
     if obj is None:
         return None
@@ -164,7 +167,7 @@ class Trainer:
                 self.lr_scheduler.step()
                 self.optimizer.zero_grad()
             
-            if dist.get_rank() == 0:
+            if is_main_process():
                 progress_bar.set_postfix({
                     "loss": f"{batch_loss:.4f}",
                     "contrastive_loss": f"{batch_contrastive_loss:.4f}",
@@ -205,7 +208,7 @@ class Trainer:
         #     )
         for epoch in range(self.training_args.num_train_epochs):
             self.run_epoch(epoch)
-            if self.gpu_id == 0 and self.training_args.save_strategy == "epoch":
+            if is_main_process() == 0 and self.training_args.save_strategy == "epoch":
                 ckpt_dir = os.path.join(self.training_args.output_dir, f"checkpoint-epoch-{epoch}")
                 os.makedirs(ckpt_dir, exist_ok=True)
                 
@@ -225,7 +228,7 @@ class Trainer:
                     print_rank(f"Warning: Could not save processor: {e}")
                 print_rank(f"Saved checkpoint to {ckpt_dir}")
                 
-        if self.gpu_id == 0:
+        if is_main_process():
             final_ckpt_dir = os.path.join(self.training_args.output_dir, f"checkpoint-final")
             os.makedirs(final_ckpt_dir, exist_ok=True)
             student = self.distiller.module.student
