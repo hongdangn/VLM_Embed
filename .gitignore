@@ -8,6 +8,8 @@
 /encode_output_path
 /test
 /test-save
+# /test-scripts
+/eval-res
 __pycache__
 .venv
 vlm

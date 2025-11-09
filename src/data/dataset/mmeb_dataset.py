@@ -23,17 +23,39 @@ logger = logging.getLogger(__name__)
 def process_image(image, resolution, max_dim=1344):
     if image is None:
         return None
+
+    width, height = image.size
+    max_side = max(width, height)
+
     if resolution == "high":
-        image = image.resize((1344, 1344))
+        target_max = 1344
     elif resolution == "mid":
-        image = image.resize((672, 672))
+        target_max = 672
     elif resolution == "low":
-        image = image.resize((128, 128))
+        target_max = 448
     else:
-        cur_max_dim = max(image.size)
-        if cur_max_dim > max_dim:
-            image = image.resize((max_dim, max_dim))
+        target_max = max_dim
+
+    # Tính tỉ lệ scale sao cho cạnh lớn nhất = target_max
+    if max_side > target_max:
+        scale = target_max / max_side
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        image = image.resize((new_width, new_height))
+
     return image
+
+POS_MOD_CLASS_LABEL = "Represent the class label: "
+POS_MOD_IMAGE_CAPTION = "Represent the image caption: "
+POS_MOD_ANSWER = "Represent the answer: "
+
+POS_MOD_DICT = {
+                "ImageNet_1K": POS_MOD_CLASS_LABEL,"HatefulMemes":POS_MOD_CLASS_LABEL,"SUN397":POS_MOD_CLASS_LABEL,"N24News":POS_MOD_CLASS_LABEL,"VOC2007":POS_MOD_CLASS_LABEL, "Place365":POS_MOD_CLASS_LABEL,"ImageNet-A":POS_MOD_CLASS_LABEL,"ImageNet-R":POS_MOD_CLASS_LABEL,"ObjectNet":POS_MOD_CLASS_LABEL,"Country211":POS_MOD_CLASS_LABEL,
+                
+                "OK-VQA":POS_MOD_ANSWER, "A-OKVQA":POS_MOD_ANSWER, "DocVQA":POS_MOD_ANSWER, "InfographicsVQA":POS_MOD_ANSWER, "ChartQA":POS_MOD_ANSWER, "Visual7W":POS_MOD_ANSWER,"ScienceQA":POS_MOD_ANSWER, "GQA":POS_MOD_ANSWER, "TextVQA":POS_MOD_ANSWER, "VizWiz":POS_MOD_ANSWER,
+                
+                "MSCOCO_i2t":POS_MOD_IMAGE_CAPTION, "VisualNews_i2t":POS_MOD_IMAGE_CAPTION,
+                }
 
 
 def get_image_bytes_and_path(img_path, image_dir, model_backbone, image_resolution):

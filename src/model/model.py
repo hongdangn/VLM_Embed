@@ -190,6 +190,7 @@ class MMEBModel(nn.Module):
 
     @classmethod
     def build(cls, model_args: ModelArguments, **kwargs):
+        INTERNVIDEO2 = "internvideo2"
         if model_args.init_lora_model:
             peft_config = PeftConfig.from_pretrained(model_args.model_name)   
             config = AutoConfig.from_pretrained(peft_config.base_model_name_or_path, trust_remote_code=True)
@@ -335,6 +336,7 @@ class MMEBModel(nn.Module):
     @classmethod
     def load(cls, model_args: ModelArguments, is_trainable=True, **kwargs):
         # Loading the base model
+        INTERNVIDEO2 = "internvideo2"
         model_name_or_path = model_args.checkpoint_path if model_args.checkpoint_path else model_args.model_name
         config = AutoConfig.from_pretrained(model_name_or_path, trust_remote_code=True)
         model_backbone = get_backbone_name(hf_config=config)
@@ -407,19 +409,7 @@ class MMEBModel(nn.Module):
             lora_config = LoraConfig.from_pretrained(model_name_or_path)
             lora_model = PeftModel.from_pretrained(base_model, model_name_or_path, config=lora_config, is_trainable=is_trainable)
             lora_model.load_adapter(model_name_or_path, lora_model.active_adapter, is_trainable=is_trainable)
-            if not is_trainable:
-                lora_model = lora_model.merge_and_unload()
-            
-            
-            #! Manual model merging. This should be commented always
-            # base_model=lora_model
-            # model_name_or_path = "./MMEB-trainedmodels/0420_InstuctionP_odibn_sdibn_20D_HNPS_Metis_bs1024.32bi_30.130_30P.10.5_70.170_vlm2vecqwen2b_2k_dy/"
-            # lora_config = LoraConfig.from_pretrained(model_name_or_path)
-            # lora_model = PeftModel.from_pretrained(base_model, model_name_or_path, config=lora_config, is_trainable=is_trainable)
-            # lora_model.load_adapter(model_name_or_path, lora_model.active_adapter, is_trainable=is_trainable)
-            # lora_model = lora_model.merge_and_unload()
-            # lora_model._hf_peft_config_loaded = False
-            # lora_model.save_pretrained(model_name_or_path+"merged/")
+            lora_model = lora_model.merge_and_unload()
 
             model = cls(
                 encoder=lora_model,
@@ -427,6 +417,7 @@ class MMEBModel(nn.Module):
                 normalize=model_args.normalize,
                 temperature=model_args.temperature
             )
+
         else:
             model = cls(
                 encoder=base_model,
@@ -443,8 +434,8 @@ class MMEBModel(nn.Module):
 
     def forward(self, qry: Dict[str, Tensor] = None, tgt: Dict[str, Tensor] = None, *args, **kwargs):
         # print(f"qry keys: {qry.keys() if qry else None}, tgt keys: {tgt.keys() if tgt else None}")
-        qry_reps, _, _ = self.encode_input(qry) if qry else (None, None, None)  # (bsz_per_device, dim)
-        tgt_reps, _, _ = self.encode_input(tgt) if tgt else (None, None, None) # (bsz_per_device, dim)
+        qry_reps = self.encode_input(qry)[0] if qry else None  # (bsz_per_device, dim)
+        tgt_reps = self.encode_input(tgt)[0] if tgt else None # (bsz_per_device, dim)
 
         if qry_reps is None or tgt_reps is None:
             return {"qry_reps": qry_reps, "tgt_reps": tgt_reps}

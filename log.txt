@@ -1,29 +1,123 @@
-DropoutAddRMSNorm of flash_attn is not installed!!!
-Loaded 2550 samples from TIGER-Lab/MMEB-train with subsets ['HatefulMemes']
-Load student with lora rank: 64
-Student use lora: True
+Starting comprehensive model evaluation for nganng0510/sft_dang_1108_0.0.1
+Targeting 10 MMEB subsets.
+==========================================================================
+   [STARTING] Evaluation for subset: ImageNet-1K
+==========================================================================
+Deleting: ./src/__pycache__
+Deleting: ./src/model/__pycache__
+Deleting: ./src/model/vlm_backbone/__pycache__
+Deleting: ./src/model/vlm_backbone/lamra/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/gme/__pycache__
+Deleting: ./src/model/vlm_backbone/intern_vl3/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_next/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/phi3_v/__pycache__
+Deleting: ./src/model/vlm_backbone/colpali/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_onevision/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl/__pycache__
+Deleting: ./src/model/llava/__pycache__
+Deleting: ./src/model/llava/model/__pycache__
+Deleting: ./src/model/llava/model/language_model/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/mobileclip/__pycache__
+Deleting: ./src/model/llava/model/multimodal_projector/__pycache__
+Deleting: ./src/data/__pycache__
+Deleting: ./src/data/dataset/__pycache__
+Deleting: ./src/data/collator/__pycache__
+Deleting: ./evaluation/__pycache__
+Deleting: ./evaluation/mmeb_baselines/__pycache__
 Detected model type: llava_qwen2
 Determined model backbone: llava_qwen2
-Student model built.
-Load teacher with lora rank: 8
-Teacher use lora: True
-Detected model type: qwen2_vl
-Determined model backbone: qwen2_vl
-Teacher model loaded.
-Projector t2s_img created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projector t2s_txt created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projectors set.
 Processor load here for LLAVA-QWEN2
-Student processor loaded.
-Load Qwen2-VL processor
->>>>>>>>>>>>>>>>>>>>>>>> Processor raghavlite/B3_Qwen2_2B
-ImageProcessor type: <class 'transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor'>
-teacher processor loaded here.
-Teacher processor loaded.
-Projector parameters added to optimizer.
-Initialized wandb
-Device: cuda:0
+Detected model type: llava_qwen2
+Determined model backbone: llava_qwen2
+Found previous eval score, skipping ImageNet-1K
+{'acc': 0.182, 'num_correct': 182, 'num_pred': 1000, 'num_data': 1000}
+[91mImageNet-1K: Calculating score now![0m
+Found previous eval score, skipping ImageNet-1K
+{'acc': 0.182, 'num_correct': 182, 'num_pred': 1000, 'num_data': 1000}
+--------------------------------------------------------------------------
+   [FINISHED] Evaluation for subset: ImageNet-1K completed successfully.
+--------------------------------------------------------------------------
+
+==========================================================================
+   [STARTING] Evaluation for subset: HatefulMemes
+==========================================================================
+Deleting: ./src/__pycache__
+Deleting: ./src/model/__pycache__
+Deleting: ./src/model/vlm_backbone/__pycache__
+Deleting: ./src/model/vlm_backbone/lamra/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/gme/__pycache__
+Deleting: ./src/model/vlm_backbone/intern_vl3/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_next/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/phi3_v/__pycache__
+Deleting: ./src/model/vlm_backbone/colpali/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_onevision/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl/__pycache__
+Deleting: ./src/model/llava/__pycache__
+Deleting: ./src/model/llava/model/__pycache__
+Deleting: ./src/model/llava/model/language_model/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/mobileclip/__pycache__
+Deleting: ./src/model/llava/model/multimodal_projector/__pycache__
+Deleting: ./src/data/__pycache__
+Deleting: ./src/data/dataset/__pycache__
+Deleting: ./src/data/collator/__pycache__
+Deleting: ./evaluation/__pycache__
+Deleting: ./evaluation/mmeb_baselines/__pycache__
+Detected model type: llava_qwen2
+Determined model backbone: llava_qwen2
+Processor load here for LLAVA-QWEN2
+Detected model type: llava_qwen2
+Determined model backbone: llava_qwen2
+Found previous eval score, skipping HatefulMemes
+{'acc': 0.49, 'num_correct': 490, 'num_pred': 1000, 'num_data': 1000}
+[91mHatefulMemes: Calculating score now![0m
+Found previous eval score, skipping HatefulMemes
+{'acc': 0.49, 'num_correct': 490, 'num_pred': 1000, 'num_data': 1000}
+--------------------------------------------------------------------------
+   [FINISHED] Evaluation for subset: HatefulMemes completed successfully.
+--------------------------------------------------------------------------
+
+==========================================================================
+   [STARTING] Evaluation for subset: SUN397
+==========================================================================
+Deleting: ./src/__pycache__
+Deleting: ./src/model/__pycache__
+Deleting: ./src/model/vlm_backbone/__pycache__
+Deleting: ./src/model/vlm_backbone/lamra/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/gme/__pycache__
+Deleting: ./src/model/vlm_backbone/intern_vl3/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_next/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/phi3_v/__pycache__
+Deleting: ./src/model/vlm_backbone/colpali/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_onevision/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl/__pycache__
+Deleting: ./src/model/llava/__pycache__
+Deleting: ./src/model/llava/model/__pycache__
+Deleting: ./src/model/llava/model/language_model/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/mobileclip/__pycache__
+Deleting: ./src/model/llava/model/multimodal_projector/__pycache__
+Deleting: ./src/data/__pycache__
+Deleting: ./src/data/dataset/__pycache__
+Deleting: ./src/data/collator/__pycache__
+Deleting: ./evaluation/__pycache__
+Deleting: ./evaluation/mmeb_baselines/__pycache__
+Detected model type: llava_qwen2
+Determined model backbone: llava_qwen2
+Processor load here for LLAVA-QWEN2
+Detected model type: llava_qwen2
+Determined model backbone: llava_qwen2
+[91m1/1: Processing SUN397 now![0m
+Not using TGT mod None
+Using TGT mod Represent the class label: 
+>>>>>>>>>>>>>inside tgt_mod_txt
