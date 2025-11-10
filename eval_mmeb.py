@@ -175,7 +175,7 @@ def main():
             encoded_tensor = np.concatenate(encoded_tensor)
             with open(encode_tgt_path, 'wb') as f:
                 pickle.dump((encoded_tensor, eval_tgt_dataset.paired_data), f)
-
+    score_sets = []
     for subset in tqdm(data_args.subset_name, desc="Iterate datasets to calculate scores"):
         print(f"\033[91m{subset}: Calculating score now!\033[0m")
         score_path = os.path.join(data_args.encode_output_path, f"{subset}_score.json")
@@ -280,6 +280,7 @@ def main():
         print(f"\033[91m{subset} accuracy: {n_correct/len(eval_data)}\033[0m")
         score_dict = {"acc": n_correct/len(eval_data), "num_correct": n_correct, "num_pred": len(eval_data),
                       "num_pred": len(all_pred), "num_data": len(eval_data)}
+        score_sets.append(n_correct/len(eval_data))
         print(score_dict)
         print(f"Outputting final score to: {score_path}")
         with open(score_path, "w") as f:
@@ -288,6 +289,7 @@ def main():
             for item in all_pred:
                 f.write(f"{item}\n")
 
+    print("Avg Score", sum(score_sets) / len(score_sets))
 
 if __name__ == "__main__":
     main()

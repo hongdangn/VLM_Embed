@@ -11,7 +11,8 @@
 set -e
 
 # --- Configuration Variables ---
-MODEL_NAME="nganng0510/dang_propose_0911"
+# MODEL_NAME="nganng0510/sft_dang_1108_0.0.1"
+MODEL_NAME="nganng0510/sft_dang_1108_0.0.1"
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
 IMAGE_DIR="/home/user2/dangnh/VLMEmbed/eval-data"
@@ -19,7 +20,7 @@ BATCH_SIZE=64
 
 # List of all dataset subsets to evaluate
 # datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007 Place365 ImageNet-A ImageNet-R ObjectNet Country211) 
-datasets=(WebQA)
+datasets=(ObjectNet)
 
 # --- End Configuration ---
 # --- End Configuration ---
@@ -39,8 +40,6 @@ for SUBSET_NAME in "${datasets[@]}"; do
         --encode_output_path "$OUTPUT_DIR" \
         --pooling eos \
         --normalize True \
-        --lora True \
-        --lora_r 64 \
         --bf16 \
         --dataset_name "$DATASET_NAME" \
         --subset_name "$SUBSET_NAME" \

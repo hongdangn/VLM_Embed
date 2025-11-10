@@ -42,6 +42,6 @@ torchrun --standalone \
     --warmup_ratio 0.03 \
     --kd_weight 0.3 \
     --kd_loss_type "dang_propose" \
-    --image_resolution "low" \
+    --image_resolution "mid" \
     --projector_config_path "./config/projector_config.json" \
     --projector_lr 5e-5 \
