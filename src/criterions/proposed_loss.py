@@ -12,11 +12,11 @@ class StrongerKD(nn.Module):
         super(StrongerKD, self).__init__()
         self.args = args
         self.rkd_loss_weight = 0.3
-        self.simple_kd_weight = 0.3
-        self.intra_rkd_weight = 0.3
-        self.img_align_loss_weight = 0.1
+        self.simple_kd_weight = 1
+        self.intra_rkd_weight = 1
+        self.img_align_loss_weight = 0.3
         self.cross_modal_kd_weight = 0.001
-        self.ot_loss_weight = 0.3
+        self.ot_loss_weight = 0.03
         self.num_chosen_hidden_states = 3
 
         self.cross_entropy_loss = nn.CrossEntropyLoss()
