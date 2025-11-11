@@ -208,7 +208,7 @@ class Trainer:
         #     )
         for epoch in range(self.training_args.num_train_epochs):
             self.run_epoch(epoch)
-            if is_main_process() == 0 and self.training_args.save_strategy == "epoch":
+            if self.training_args.save_strategy == "epoch":
                 ckpt_dir = os.path.join(self.training_args.output_dir, f"checkpoint-epoch-{epoch}")
                 os.makedirs(ckpt_dir, exist_ok=True)
                 

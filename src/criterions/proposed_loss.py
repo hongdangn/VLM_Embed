@@ -11,12 +11,15 @@ class StrongerKD(nn.Module):
     def __init__(self, args):
         super(StrongerKD, self).__init__()
         self.args = args
-        self.rkd_loss_weight = 0.3
-        self.simple_kd_weight = 1
-        self.intra_rkd_weight = 1
-        self.img_align_loss_weight = 0.3
-        self.cross_modal_kd_weight = 0.001
-        self.ot_loss_weight = 0.03
+        self.rkd_loss_weight = args.rkd_loss_weight if hasattr(args, "rkd_loss_weight") else 0.3
+        self.simple_kd_weight = args.simple_kd_weight if hasattr(args, "simple_kd_weight") else 1
+        self.intra_rkd_weight = args.intra_rkd_weight if hasattr(args, "intra_rkd_weight") else 0.3
+        self.img_align_loss_weight = args.img_align_loss_weight if hasattr(args, "img_align_loss_weight") else 0.3
+        self.cross_modal_kd_weight = args.cross_modal_kd_weight if hasattr(args, "cross_modal_kd_weight") else 0.001
+        self.ot_loss_weight = args.ot_loss_weight if hasattr(args, "ot_loss_weight") else 0.03
+        print(f"[StrongerKD] rkd_loss_weight: {self.rkd_loss_weight}, simple_kd_weight: {self.simple_kd_weight}, "
+              f"intra_rkd_weight: {self.intra_rkd_weight}, img_align_loss_weight: {self.img_align_loss_weight}, "
+              f"cross_modal_kd_weight: {self.cross_modal_kd_weight}, ot_loss_weight: {self.ot_loss_weight}")
         self.num_chosen_hidden_states = 3
 
         self.cross_entropy_loss = nn.CrossEntropyLoss()

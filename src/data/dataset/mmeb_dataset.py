@@ -312,28 +312,15 @@ class EvalDataset(Dataset):
 
     def __getitem__(self, item):
         text, img_path = self.paired_dataset[item]["text"], self.paired_dataset[item]["img_path"]
-
+        if self.backbone != PHI3V:
+            text = text.replace(VLM_IMAGE_TOKENS[PHI3V], VLM_IMAGE_TOKENS[self.backbone])
+        # if(self.backbone==INTERN_VL3):
+        #     full_img_path = os.path.join(self.data_args.image_dir, img_path)
+        #     return text, [full_img_path]
         if self.subset == "WebQA":
-            texts = [text.replace("<|image_1|>", "").strip()]
-        else:
-            texts = text
-        img_paths = [img_path]
-
-        out_texts, out_images = [], []
-        for t, p in zip(texts, img_paths):
-            if self.backbone != PHI3V:
-                tmp_text = t.replace(VLM_IMAGE_TOKENS[PHI3V], VLM_IMAGE_TOKENS[self.backbone])
-            tmp_image = self._get_image(img_path)
-            if not tmp_text and not tmp_image:
-                continue
-
-            out_texts.append(tmp_text)  
-            out_images.append(tmp_image)
-
-        return {
-            "text": out_texts, 
-            "image": out_images
-        }
+            text = text.replace("<|image_1|>", "").strip()
+            
+        return text, self._get_image(img_path)
 
     def _process_image(self, image, resolution):
         if image is None:

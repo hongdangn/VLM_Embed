@@ -43,6 +43,7 @@ class ModelArguments:
     projector_lr: float = field(default=1e-4, metadata={"help": "projector learning rate"})
     student_hidden_dim: int = field(default=896, metadata={"help": "student hidden dim"})
     teacher_hidden_dim: int = field(default=1536, metadata={"help": "teacher hidden dim"})
+
     #! new args 2
 
 @dataclass
@@ -99,6 +100,13 @@ class TrainingArguments(TrainingArguments):
     kd_loss_type: str = field(default="contrastive_rkd", metadata={"help": "type of kd loss, current only support RKD"})
     ds_config: str = field(default=None, metadata={"help": "DeepSpeed config json file path"})
     deepspeed_config: str = field(default=None, metadata={"help": "DeepSpeed config json file path"})
+
+    intra_rkd_weight: float = field(default=0.3, metadata={"help": "weight of intra RKD loss"})
+    rkd_loss_weight: float = field(default=0.0, metadata={"help": "weight of RKD loss"})
+    simple_kd_weight: float = field(default=1.0, metadata={"help": "weight of simple kd loss"})
+    img_align_loss_weight: float = field(default=0.0, metadata={"help": "weight of image-text alignment loss"})
+    cross_modal_kd_weight: float = field(default=0.001, metadata={"help": "weight of cross modal kd loss"})
+    ot_loss_weight: float = field(default=0.03, metadata={"help": "weight of optimal transport loss"})
     
 @dataclass
 class MTEBArguments:

@@ -16,85 +16,84 @@ PHI_IMAGE_TOKEN_MAX_INPUT_ID = int(1e9)
 LLAVA_IMAGE_TOKEN_ID = 32000
 LLAVA_ONEVISION_IMAGE_TOKEN_ID = 151646
 
-@dataclass
-class EvalCollator:
-    def __init__(self, processor: ProcessorMixin,
-                 data_args: DataArguments,
-                 model_args: ModelArguments, 
-                 batch_size = None):
-        self.processor = processor
-        self.model_args = model_args
-        self.data_args = data_args
-        self.batch_size = batch_size
-    
-    def _get_batch_inputs(self, batch, text_keyname, image_keyname):
-        texts, visual_inputs = [], []
-        for example in batch:
-            if example is None or not example:
-                text, visual_input = ' ', None
-                texts.append(text)
-                visual_inputs.append(visual_input)
-            else:
-                text, raw_images = example[text_keyname], example[image_keyname]
-                visual_input = []
-                for image in raw_images:
-                    if image is None:
-                        visual_input.append(None)
-                    else:
-                        visual_input.append(image)
-                texts.extend(text)
-                visual_inputs.extend(visual_input)
-        inputs = {'text': texts, 'images': visual_inputs}
-        return inputs
-    
-    def __call__(self, examples):
-        print(examples)
-        inputs = self._get_batch_inputs(examples, "text", "image")
-
-        bs = len(inputs['text'])
-        assert bs > 0, 'An empty batch is detected!'
-        
-        if self.batch_size is not None and bs < self.batch_size:
-            raise RuntimeError(f"Expected batch size {self.batch_size}, but got {bs}.")
-        
-        process_student_fn = process_vlm_inputs_fns[self.model_args.model_backbone]
-        inputs = process_student_fn(inputs, processor=self.processor, max_length=self.data_args.max_len)
-
-        return inputs
-        # return {
-        #     'qry': inputs,
-        # }
-
 # @dataclass
 # class EvalCollator:
-#     data_args: DataArguments
-#     model_args: ModelArguments
-#     processor: ProcessorMixin
-
-#     def __call__(self, examples):
-#         """
-#         :param examples: qry, qry_image, pos_text, pos_image
-#         """
-#         examples = {'text': [e[0] for e in examples], 'images': [e[1] for e in examples]}
-        
-#         if(self.model_args.model_backbone==INTERN_VL3):
-#             examples['images'] = [[i.filename] if i is not None else None for i in examples['images']]
-#             inputs = process_vlm_inputs_fns[self.model_args.model_backbone](examples,
-#                                             processor = self.processor,
-#                                             max_length = self.data_args.max_len)
-#         elif(self.model_args.model_backbone==LLAVA_QWEN2):
-#             inputs = process_vlm_inputs_fns[self.model_args.model_backbone](examples,
-#                                             processor = self.processor)
-#         elif(self.model_args.model_backbone!=INTERN_VL3):
-#             inputs = process_vlm_inputs_fns[self.model_args.model_backbone](examples,
-#                                             processor = self.processor,
-#                                             max_length = self.data_args.max_len)
-#             inputs['image_paths'] = [i.filename if i is not None else None for i in examples['images']]
-#             inputs['text'] = examples['text']
-#             inputs['images'] = examples['images']
-#         else:
-#             assert False
+#     def __init__(self, processor: ProcessorMixin,
+#                  data_args: DataArguments,
+#                  model_args: ModelArguments, 
+#                  batch_size = None):
+#         self.processor = processor
+#         self.model_args = model_args
+#         self.data_args = data_args
+#         self.batch_size = batch_size
+    
+#     def _get_batch_inputs(self, batch, text_keyname, image_keyname):
+#         texts, visual_inputs = [], []
+#         for example in batch:
+#             if example is None or not example:
+#                 text, visual_input = ' ', None
+#                 texts.append(text)
+#                 visual_inputs.append(visual_input)
+#             else:
+#                 text, raw_images = example[text_keyname], example[image_keyname]
+#                 visual_input = []
+#                 for image in raw_images:
+#                     if image is None:
+#                         visual_input.append(None)
+#                     else:
+#                         visual_input.append(image)
+#                 texts.extend(text)
+#                 visual_inputs.extend(visual_input)
+#         inputs = {'text': texts, 'images': visual_inputs}
 #         return inputs
+    
+#     def __call__(self, examples):
+#         inputs = self._get_batch_inputs(examples, "text", "image")
+
+#         bs = len(inputs['text'])
+#         assert bs > 0, 'An empty batch is detected!'
+        
+#         if self.batch_size is not None and bs < self.batch_size:
+#             raise RuntimeError(f"Expected batch size {self.batch_size}, but got {bs}.")
+        
+#         process_student_fn = process_vlm_inputs_fns[self.model_args.model_backbone]
+#         inputs = process_student_fn(inputs, processor=self.processor, max_length=self.data_args.max_len)
+
+#         return inputs
+#         # return {
+#         #     'qry': inputs,
+#         # }
+
+@dataclass
+class EvalCollator:
+    data_args: DataArguments
+    model_args: ModelArguments
+    processor: ProcessorMixin
+
+    def __call__(self, examples):
+        """
+        :param examples: qry, qry_image, pos_text, pos_image
+        """
+        examples = {'text': [e[0] for e in examples], 'images': [e[1] for e in examples]}
+        
+        if(self.model_args.model_backbone==INTERN_VL3):
+            examples['images'] = [[i.filename] if i is not None else None for i in examples['images']]
+            inputs = process_vlm_inputs_fns[self.model_args.model_backbone](examples,
+                                            processor = self.processor,
+                                            max_length = self.data_args.max_len)
+        elif(self.model_args.model_backbone==LLAVA_QWEN2):
+            inputs = process_vlm_inputs_fns[self.model_args.model_backbone](examples,
+                                            processor = self.processor)
+        elif(self.model_args.model_backbone!=INTERN_VL3):
+            inputs = process_vlm_inputs_fns[self.model_args.model_backbone](examples,
+                                            processor = self.processor,
+                                            max_length = self.data_args.max_len)
+            inputs['image_paths'] = [i.filename if i is not None else None for i in examples['images']]
+            inputs['text'] = examples['text']
+            inputs['images'] = examples['images']
+        else:
+            assert False
+        return inputs
 
 
 @dataclass
