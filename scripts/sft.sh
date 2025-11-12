@@ -20,10 +20,10 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
     --model_backbone "llava_qwen2" \
     --image_dir "./vlm2vec_train/MMEB-train/" \
     --output_dir "training/no_deepspeed_sft" \
-    --per_device_train_batch_size 16 \
+    --per_device_train_batch_size 32 \
     --gradient_accumulation_steps 2 \
     --learning_rate 1e-5 \
-    --num_train_epochs 1 \
+    --num_train_epochs 2 \
     --bf16 \
     --save_total_limit 2 \
     --logging_steps 1 \

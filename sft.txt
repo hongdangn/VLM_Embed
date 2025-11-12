@@ -1,6 +1,6 @@
 ['CIRR']
 llava_qwen2
-Loaded 7834 samples from TIGER-Lab/MMEB-train with subsets ['CIRR']
+Loaded 26116 samples from TIGER-Lab/MMEB-train with subsets ['CIRR']
 Load model with lora rank: 8
 Student use lora: True
 Detected model type: llava_qwen2

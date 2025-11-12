@@ -21,7 +21,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
     --model_backbone "llava_qwen2" \
     --image_dir "./vlm2vec_train/MMEB-train/" \
     --output_dir "training/no_deepspeed_sft" \
-    --per_device_train_batch_size 4 \
+    --per_device_train_batch_size 8 \
     --gradient_accumulation_steps 2 \
     --learning_rate 1e-5 \
     --num_train_epochs 2 \
@@ -34,7 +34,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
     --normalize True \
     --lr_scheduler_type "cosine" \
     --warmup_ratio 0.03 \
-    --image_resolution low \
+    --image_resolution mid \
     --projector_config_path "./config/projector_config.json" \
     --projector_lr 5e-5 \
 > sft.txt
