@@ -16,7 +16,7 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader, RandomSampler, DistributedSampler
 from torch.optim import AdamW
 
-import deepspeed
+# import deepspeed
 import wandb 
 from accelerate import Accelerator
 from huggingface_hub import HfApi, HfFolder, Repository, create_repo

@@ -5,7 +5,7 @@ transformers==4.56.1
 POT
 huggingface-hub
 peft==0.17.1
-accelerate=1.10.1
+accelerate==1.10.1
 numba
 python-dotenv
 datasets==4.1.1

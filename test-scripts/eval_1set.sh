@@ -11,11 +11,11 @@
 set -e
 
 # --- Configuration Variables ---
-MODEL_NAME="/home/user2/dangnh/VLM_Embed/training/no_deepspeed_sft/checkpoint-epoch1"
+MODEL_NAME="/home/aiotlab/VLM_Embed/training/no_deepspeed_sft/checkpoint-epoch2"
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
-IMAGE_DIR="/home/user2/dangnh/VLMEmbed/eval-data"
-BATCH_SIZE=8
+IMAGE_DIR="/home/aiotlab/VLM_Embed/eval-data"
+BATCH_SIZE=32
 
 # List of all dataset subsets to evaluate
 # datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007 Place365 ImageNet-A ImageNet-R ObjectNet Country211) 
