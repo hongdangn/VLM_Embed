@@ -1,20 +1,35 @@
-from huggingface_hub import upload_folder
+from huggingface_hub import HfApi, HfFolder, Repository, create_repo
+import os
 
-# 🪪 Access token của bạn
-token = "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"
+def push_to_hub(repo_name=None, token=None, commit_message="Upload model", 
+                local_dir="./temp_model", private=False):
+    try:
+        if not repo_name:
+            raise ValueError("must specify a repo name to push to hub")
+        
+        if not os.path.exists(local_dir):
+            raise ValueError(f"local_dir {local_dir} does not exist")
+        
+        print(f"Pushing model to the hub at {repo_name}...")
+        api = HfApi()
+        create_repo(repo_name, token=token, private=private, exist_ok=True)
+        api.upload_folder(
+            folder_path=local_dir,
+            repo_id=repo_name, 
+            token=token, 
+            commit_message=commit_message
+        )
 
-# 📁 Thư mục bạn muốn upload (ví dụ: model, checkpoints, v.v.)
-folder_path = "/workspace/ComfyUI/models/gligen/VLM_Embed/training/no_deepspeed_propose_kd_weight/checkpoint-final"
-
-# 🏷️ Repo đã có sẵn trên Hugging Face
-repo_id = "DVLe/vlm_propose_hateful"
-
-# 🚀 Upload toàn bộ folder lên repo đó
-upload_folder(
-    folder_path=folder_path,
-    repo_id=repo_id,
-    token=token,
-    path_in_repo="",     # thư mục gốc trong repo, có thể đổi ví dụ "models/"
-)
-
-print("✅ Đã upload folder lên Hugging Face thành công!")
+        print(f"Model has been pushed to the hub at: {repo_name}")
+        return True
+        
+    except Exception as e:
+        print(f"Error pushing to hub: {str(e)}")
+        return False
+    
+if __name__ == "__main__":
+    push_to_hub(
+        repo_name="dangnguyens1/sft-fastvlm-2e",
+        token="", # assign the api key from HF to this param
+        local_dir="/home/aiotlab/VLM_Embed/training/no_deepspeed_sft1/checkpoint-epoch2"
+    )
