@@ -13,7 +13,7 @@ LOG_FILE="sft_no_deepspeed.log"
 torchrun --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
     --model_name "apple/FastVLM-0.5B" \
     --lora True \
-    --lora_r 8 \
+    --lora_r 64 \
     --pooling "eos" \
     --dataset_name "TIGER-Lab/MMEB-train" \
     --subset_name "CIRR"     \

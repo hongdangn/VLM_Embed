@@ -1,168 +1,146 @@
-Load student with lora rank: 8
-Student use lora: True
+Starting comprehensive model evaluation for /home/user2/dangnh/VLM_Embed/training/no_deepspeed_sft/checkpoint-epoch2
+Targeting 1 MMEB subsets.
+==========================================================================
+   [STARTING] Evaluation for subset: CIRR
+==========================================================================
+Deleting: ./src/__pycache__
+Deleting: ./src/model/__pycache__
+Deleting: ./src/model/vlm_backbone/__pycache__
+Deleting: ./src/model/vlm_backbone/lamra/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/gme/__pycache__
+Deleting: ./src/model/vlm_backbone/intern_vl3/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_next/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/phi3_v/__pycache__
+Deleting: ./src/model/vlm_backbone/colpali/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_onevision/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl/__pycache__
+Deleting: ./src/model/llava/__pycache__
+Deleting: ./src/model/llava/model/__pycache__
+Deleting: ./src/model/llava/model/language_model/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/mobileclip/__pycache__
+Deleting: ./src/model/llava/model/multimodal_projector/__pycache__
+Deleting: ./src/data/__pycache__
+Deleting: ./src/data/dataset/__pycache__
+Deleting: ./src/data/collator/__pycache__
+Deleting: ./evaluation/__pycache__
+Deleting: ./evaluation/mmeb_baselines/__pycache__
 Detected model type: llava_qwen2
 Determined model backbone: llava_qwen2
-Student model built.
-Load teacher with lora rank: 8
-Teacher use lora: True
-Detected model type: qwen2_vl
-Determined model backbone: qwen2_vl
-Teacher model loaded.
-Projector t2s_img created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projector t2s_txt created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projectors set.
-Loaded 7835 samples from TIGER-Lab/MMEB-train with subsets ['CIRR']
 Processor load here for LLAVA-QWEN2
-Student processor loaded.
-Load Qwen2-VL processor
->>>>>>>>>>>>>>>>>>>>>>>> Processor raghavlite/B3_Qwen2_2B
-ImageProcessor type: <class 'transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor'>
-teacher processor loaded here.
-Teacher processor loaded.
-Len of train dataset: 7835
-Projector parameters added to optimizer.
-[StrongerKD] rkd_loss_weight: 0.0, simple_kd_weight: 0.3, intra_rkd_weight: 0.3, img_align_loss_weight: 0.0, cross_modal_kd_weight: 0.002, ot_loss_weight: 0.03
-Load student with lora rank: 8
-Student use lora: True
 Detected model type: llava_qwen2
 Determined model backbone: llava_qwen2
-Student model built.
-Load teacher with lora rank: 8
-Teacher use lora: True
-Detected model type: qwen2_vl
-Determined model backbone: qwen2_vl
-Teacher model loaded.
-Projector t2s_img created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projector t2s_txt created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projectors set.
-Loaded 7835 samples from TIGER-Lab/MMEB-train with subsets ['CIRR']
-Processor load here for LLAVA-QWEN2
-Student processor loaded.
-Load Qwen2-VL processor
->>>>>>>>>>>>>>>>>>>>>>>> Processor raghavlite/B3_Qwen2_2B
-ImageProcessor type: <class 'transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor'>
-teacher processor loaded here.
-Teacher processor loaded.
-Len of train dataset: 7835
-Projector parameters added to optimizer.
-[StrongerKD] rkd_loss_weight: 0.0, simple_kd_weight: 0.3, intra_rkd_weight: 0.3, img_align_loss_weight: 0.0, cross_modal_kd_weight: 0.002, ot_loss_weight: 0.06
-Load student with lora rank: 8
-Student use lora: True
+[91m1/1: Processing CIRR now![0m
+Not using TGT mod None
+Not using TGT mod None
+[91mCIRR: Calculating score now![0m
+Loading cached query/target tensors
+Loading eval dataset
+len(tgt_key2emb) = 2197
+[91mCIRR accuracy: 0.291[0m
+{'acc': 0.291, 'num_correct': 291, 'num_pred': 1000, 'num_data': 1000}
+Outputting final score to: ./eval-res/CIRR_score.json
+Avg Score 0.291
+--------------------------------------------------------------------------
+   [FINISHED] Evaluation for subset: CIRR completed successfully.
+--------------------------------------------------------------------------
+
+--------------------------------------------------------------------------
+All /home/user2/dangnh/VLM_Embed/training/no_deepspeed_sft/checkpoint-epoch2 evaluations on all specified subsets are complete.
+--------------------------------------------------------------------------
+Starting comprehensive model evaluation for /home/user2/dangnh/VLM_Embed/training/no_deepspeed_sft/checkpoint-epoch1
+Targeting 1 MMEB subsets.
+==========================================================================
+   [STARTING] Evaluation for subset: CIRR
+==========================================================================
+Deleting: ./src/__pycache__
+Deleting: ./src/model/__pycache__
+Deleting: ./src/model/vlm_backbone/__pycache__
+Deleting: ./src/model/vlm_backbone/lamra/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/gme/__pycache__
+Deleting: ./src/model/vlm_backbone/intern_vl3/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_next/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/phi3_v/__pycache__
+Deleting: ./src/model/vlm_backbone/colpali/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_onevision/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl/__pycache__
+Deleting: ./src/model/llava/__pycache__
+Deleting: ./src/model/llava/model/__pycache__
+Deleting: ./src/model/llava/model/language_model/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/mobileclip/__pycache__
+Deleting: ./src/model/llava/model/multimodal_projector/__pycache__
+Deleting: ./src/data/__pycache__
+Deleting: ./src/data/dataset/__pycache__
+Deleting: ./src/data/collator/__pycache__
+Deleting: ./evaluation/__pycache__
+Deleting: ./evaluation/mmeb_baselines/__pycache__
 Detected model type: llava_qwen2
 Determined model backbone: llava_qwen2
-Student model built.
-Load teacher with lora rank: 8
-Teacher use lora: True
-Detected model type: qwen2_vl
-Determined model backbone: qwen2_vl
-Teacher model loaded.
-Projector t2s_img created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projector t2s_txt created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projectors set.
-Loaded 7835 samples from TIGER-Lab/MMEB-train with subsets ['CIRR']
 Processor load here for LLAVA-QWEN2
-Student processor loaded.
-Load Qwen2-VL processor
->>>>>>>>>>>>>>>>>>>>>>>> Processor raghavlite/B3_Qwen2_2B
-ImageProcessor type: <class 'transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor'>
-teacher processor loaded here.
-Teacher processor loaded.
-Len of train dataset: 7835
-Projector parameters added to optimizer.
-[StrongerKD] rkd_loss_weight: 0.0, simple_kd_weight: 0.3, intra_rkd_weight: 0.3, img_align_loss_weight: 0.0, cross_modal_kd_weight: 0.002, ot_loss_weight: 0.09
-Load student with lora rank: 8
-Student use lora: True
 Detected model type: llava_qwen2
 Determined model backbone: llava_qwen2
-Student model built.
-Load teacher with lora rank: 8
-Teacher use lora: True
-Detected model type: qwen2_vl
-Determined model backbone: qwen2_vl
-Teacher model loaded.
-Projector t2s_img created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projector t2s_txt created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projectors set.
-Loaded 7835 samples from TIGER-Lab/MMEB-train with subsets ['CIRR']
-Processor load here for LLAVA-QWEN2
-Student processor loaded.
-Load Qwen2-VL processor
->>>>>>>>>>>>>>>>>>>>>>>> Processor raghavlite/B3_Qwen2_2B
-ImageProcessor type: <class 'transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor'>
-teacher processor loaded here.
-Teacher processor loaded.
-Len of train dataset: 7835
-Projector parameters added to optimizer.
-[StrongerKD] rkd_loss_weight: 0.0, simple_kd_weight: 0.3, intra_rkd_weight: 0.3, img_align_loss_weight: 0.0, cross_modal_kd_weight: 0.004, ot_loss_weight: 0.03
-Load student with lora rank: 8
-Student use lora: True
+Found previous eval score, skipping CIRR
+{'acc': 0.291, 'num_correct': 291, 'num_pred': 1000, 'num_data': 1000}
+[91mCIRR: Calculating score now![0m
+Found previous eval score, skipping CIRR
+{'acc': 0.291, 'num_correct': 291, 'num_pred': 1000, 'num_data': 1000}
+Starting comprehensive model evaluation for /home/user2/dangnh/VLM_Embed/training/no_deepspeed_sft/checkpoint-epoch1
+Targeting 1 MMEB subsets.
+==========================================================================
+   [STARTING] Evaluation for subset: CIRR
+==========================================================================
+Deleting: ./src/__pycache__
+Deleting: ./src/model/__pycache__
+Deleting: ./src/model/vlm_backbone/__pycache__
+Deleting: ./src/model/vlm_backbone/lamra/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/gme/__pycache__
+Deleting: ./src/model/vlm_backbone/intern_vl3/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_next/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl_tokenselection/__pycache__
+Deleting: ./src/model/vlm_backbone/phi3_v/__pycache__
+Deleting: ./src/model/vlm_backbone/colpali/__pycache__
+Deleting: ./src/model/vlm_backbone/llava_onevision/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_5_vl/__pycache__
+Deleting: ./src/model/vlm_backbone/qwen2_vl/__pycache__
+Deleting: ./src/model/llava/__pycache__
+Deleting: ./src/model/llava/model/__pycache__
+Deleting: ./src/model/llava/model/language_model/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/__pycache__
+Deleting: ./src/model/llava/model/multimodal_encoder/mobileclip/__pycache__
+Deleting: ./src/model/llava/model/multimodal_projector/__pycache__
+Deleting: ./src/data/__pycache__
+Deleting: ./src/data/dataset/__pycache__
+Deleting: ./src/data/collator/__pycache__
+Deleting: ./evaluation/__pycache__
+Deleting: ./evaluation/mmeb_baselines/__pycache__
 Detected model type: llava_qwen2
 Determined model backbone: llava_qwen2
-Student model built.
-Load teacher with lora rank: 8
-Teacher use lora: True
-Detected model type: qwen2_vl
-Determined model backbone: qwen2_vl
-Teacher model loaded.
-Projector t2s_img created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projector t2s_txt created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projectors set.
-Loaded 7835 samples from TIGER-Lab/MMEB-train with subsets ['CIRR']
 Processor load here for LLAVA-QWEN2
-Student processor loaded.
-Load Qwen2-VL processor
->>>>>>>>>>>>>>>>>>>>>>>> Processor raghavlite/B3_Qwen2_2B
-ImageProcessor type: <class 'transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor'>
-teacher processor loaded here.
-Teacher processor loaded.
-Len of train dataset: 7835
-Projector parameters added to optimizer.
-[StrongerKD] rkd_loss_weight: 0.0, simple_kd_weight: 0.3, intra_rkd_weight: 0.3, img_align_loss_weight: 0.0, cross_modal_kd_weight: 0.004, ot_loss_weight: 0.06
-Load student with lora rank: 8
-Student use lora: True
 Detected model type: llava_qwen2
 Determined model backbone: llava_qwen2
-Student model built.
-Load teacher with lora rank: 8
-Teacher use lora: True
-Detected model type: qwen2_vl
-Determined model backbone: qwen2_vl
-Teacher model loaded.
-Projector t2s_img created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projector t2s_txt created with structure: Sequential(
-  (0): Linear(in_features=1536, out_features=896, bias=True)
-)
-Projectors set.
-Loaded 7835 samples from TIGER-Lab/MMEB-train with subsets ['CIRR']
-Processor load here for LLAVA-QWEN2
-Student processor loaded.
-Load Qwen2-VL processor
->>>>>>>>>>>>>>>>>>>>>>>> Processor raghavlite/B3_Qwen2_2B
-ImageProcessor type: <class 'transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor'>
-teacher processor loaded here.
-Teacher processor loaded.
-Len of train dataset: 7835
-Projector parameters added to optimizer.
-[StrongerKD] rkd_loss_weight: 0.0, simple_kd_weight: 0.3, intra_rkd_weight: 0.6, img_align_loss_weight: 0.0, cross_modal_kd_weight: 0.002, ot_loss_weight: 0.03
+[91m1/1: Processing CIRR now![0m
+Not using TGT mod None
+Not using TGT mod None
+[91mCIRR: Calculating score now![0m
+Loading cached query/target tensors
+Loading eval dataset
+len(tgt_key2emb) = 2197
+[91mCIRR accuracy: 0.273[0m
+{'acc': 0.273, 'num_correct': 273, 'num_pred': 1000, 'num_data': 1000}
+Outputting final score to: ./eval-res/CIRR_score.json
+Avg Score 0.273
+--------------------------------------------------------------------------
+   [FINISHED] Evaluation for subset: CIRR completed successfully.
+--------------------------------------------------------------------------
+
+--------------------------------------------------------------------------
+All /home/user2/dangnh/VLM_Embed/training/no_deepspeed_sft/checkpoint-epoch1 evaluations on all specified subsets are complete.
+--------------------------------------------------------------------------

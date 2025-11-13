@@ -15,7 +15,7 @@ MODEL_NAME="/home/user2/dangnh/VLM_Embed/training/no_deepspeed_sft/checkpoint-ep
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
 IMAGE_DIR="/home/user2/dangnh/VLMEmbed/eval-data"
-BATCH_SIZE=64
+BATCH_SIZE=8
 
 # List of all dataset subsets to evaluate
 # datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007 Place365 ImageNet-A ImageNet-R ObjectNet Country211) 
