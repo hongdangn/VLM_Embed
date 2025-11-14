@@ -5,6 +5,8 @@
 /wandb
 /training
 /vlm2vec_train
+/eval-data
+/vlm2vec
 /eval-images
 /encode_output_path
 /test
