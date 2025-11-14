@@ -31,5 +31,5 @@ if __name__ == "__main__":
     push_to_hub(
         repo_name="dangnguyens1/sft-fastvlm-2e",
         token="", # assign the api key from HF to this param
-        local_dir="/home/aiotlab/VLM_Embed/training/no_deepspeed_sft1/checkpoint-epoch2"
+        local_dir="/home/aiotlab/VLM_Embed/training/no_deepspeed_sft2/checkpoint-epoch5"
     )

@@ -283,7 +283,7 @@ class MMEBModel(nn.Module):
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.bfloat16,
                 config=config,
-                # **kwargs
+                **kwargs
             )
         else:
             config.use_cache = False
@@ -294,9 +294,9 @@ class MMEBModel(nn.Module):
                 trust_remote_code=True)
 
 
-        if model_args.lora:
+        if model_args.load_pretrained_lora:
             model_name_or_path = model_args.checkpoint_path if model_args.checkpoint_path else model_args.model_name
-            print_master(f'Loading LoRA from {model_name_or_path}')
+            print_master(f'Loading Pre-trained LoRA model from {model_name_or_path}')
             lora_config = LoraConfig.from_pretrained(model_name_or_path)
             lora_model = PeftModel.from_pretrained(base_model, model_name_or_path, config=lora_config, is_trainable=True)
             # lora_model.load_adapter(model_name_or_path, lora_model.active_adapter, is_trainable=True)
@@ -308,13 +308,36 @@ class MMEBModel(nn.Module):
                 normalize=model_args.normalize,
                 temperature=model_args.temperature
             )
-        else:
+
+            return model
+        elif model_args.lora:
+            print_master(f'Initializing LoRA adapter from {base_model}')
+            lora_config = LoraConfig(
+                r=model_args.lora_r,
+                lora_alpha=model_args.lora_alpha,
+                target_modules=model_args.lora_target_modules.split(','),
+                lora_dropout=model_args.lora_dropout,
+                init_lora_weights="gaussian",
+                use_dora=True,
+                inference_mode=False
+            )
+            lora_model = get_peft_model(base_model, lora_config)
+
             model = cls(
-                encoder=base_model,
+                encoder=lora_model,
                 pooling=model_args.pooling,
                 normalize=model_args.normalize,
                 temperature=model_args.temperature
             )
+
+            return model
+        
+        model = cls(
+            encoder=base_model,
+            pooling=model_args.pooling,
+            normalize=model_args.normalize,
+            temperature=model_args.temperature
+        )
         setattr(model, 'model_backbone', model_backbone)
         return model
 
