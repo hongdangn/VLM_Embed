@@ -8,6 +8,8 @@
 /encode_output_path
 /test
 /test-save
+/eval-data
+/eval-images
 # /test-scripts
 /eval-res
 __pycache__
