@@ -5,7 +5,3 @@ Load model with lora rank: 64
 Student use lora: True
 Detected model type: llava_qwen2
 Determined model backbone: llava_qwen2
-Model built.
-Processor load here for LLAVA-QWEN2
-Loading model's processor.
-llava_qwen2

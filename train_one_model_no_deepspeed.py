@@ -16,7 +16,7 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader, RandomSampler, DistributedSampler
 from torch.optim import AdamW
 
-import deepspeed
+# import deepspeed
 import wandb 
 from accelerate import Accelerator
 from huggingface_hub import HfApi, HfFolder, Repository, create_repo
@@ -150,7 +150,7 @@ def finetune(
         )
         
         train_iter = iter(train_dataloader)
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
         
             
         for batch in progress_bar:
@@ -318,7 +318,7 @@ def main():
     print_rank(f"Number of training samples: {len(train_dataset)}")
     model_trainer = OneModelTrainer(model_args, 
                                     training_args, 
-                                    device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+                                    device=torch.device("cuda:1" if torch.cuda.is_available() else "cpu"))
     collator = TrainOneModelCollator(
         processor=model_trainer.get_processor(),
         model_args=model_args,

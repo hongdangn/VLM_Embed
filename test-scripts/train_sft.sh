@@ -11,7 +11,7 @@ LOG_FILE="sft_no_deepspeed.log"
 # Dùng torchrun để khởi chạy
 # =========================================================================
 torchrun --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
-    --model_name "apple/FastVLM-0.5B" \
+    --model_name "dangnguyens1/sft-fastvlm-2e" \
     --lora True \
     --lora_r 64 \
     --pooling "eos" \

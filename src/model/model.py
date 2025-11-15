@@ -191,7 +191,7 @@ class MMEBModel(nn.Module):
     @classmethod
     def build(cls, model_args: ModelArguments, **kwargs):
         INTERNVIDEO2 = "internvideo2"
-        if model_args.init_lora_model:
+        if model_args.lora:
             peft_config = PeftConfig.from_pretrained(model_args.model_name)   
             config = AutoConfig.from_pretrained(peft_config.base_model_name_or_path, trust_remote_code=True)
         else:
@@ -283,6 +283,7 @@ class MMEBModel(nn.Module):
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.bfloat16,
                 config=config,
+                device_map="auto",
                 # **kwargs
             )
         else:
@@ -294,28 +295,15 @@ class MMEBModel(nn.Module):
                 trust_remote_code=True)
 
 
-        if model_args.init_lora_model:
+        if model_args.lora:
             model_name_or_path = model_args.checkpoint_path if model_args.checkpoint_path else model_args.model_name
             print_master(f'Loading LoRA from {model_name_or_path}')
             lora_config = LoraConfig.from_pretrained(model_name_or_path)
-            lora_model = PeftModel.from_pretrained(base_model, model_name_or_path, config=lora_config, is_trainable=False)
-            lora_model.load_adapter(model_name_or_path, lora_model.active_adapter, is_trainable=False)
+            lora_model = PeftModel.from_pretrained(base_model, model_name_or_path, config=lora_config, is_trainable=True)
+            lora_model.load_adapter(model_name_or_path, lora_model.active_adapter, is_trainable=True)
             lora_model = lora_model.merge_and_unload()
-            base_model = lora_model.to(dtype=torch.bfloat16)
+            # base_model = lora_model.to(dtype=torch.bfloat16)
 
-
-        if model_args.lora:
-            print_master(f'Loading lora adapter from {base_model}')
-            lora_config = LoraConfig(
-                r=model_args.lora_r,
-                lora_alpha=model_args.lora_alpha,
-                target_modules=model_args.lora_target_modules.split(','),
-                lora_dropout=model_args.lora_dropout,
-                init_lora_weights="gaussian",
-                use_dora=True,
-                inference_mode=False
-            )
-            lora_model = get_peft_model(base_model, lora_config)
             model = cls(
                 encoder=lora_model,
                 pooling=model_args.pooling,

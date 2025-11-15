@@ -11,10 +11,10 @@
 set -e
 
 # --- Configuration Variables ---
-MODEL_NAME="/home/user2/dangnh/VLM_Embed/training/no_deepspeed_sft/checkpoint-epoch1"
+MODEL_NAME="dangnguyens1/sft-fastvlm-2e"
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
-IMAGE_DIR="/home/user2/dangnh/VLMEmbed/eval-data"
+IMAGE_DIR="/home/mcn/VLM_Embed/eval-images"
 BATCH_SIZE=8
 
 # List of all dataset subsets to evaluate
