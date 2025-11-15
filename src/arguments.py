@@ -15,6 +15,7 @@ class ModelArguments:
     temperature: float = field(default=0.02, metadata={"help": "temperature for softmax"})
     lora: bool = field(default=False, metadata={"help": "do parameter-efficient fine-tuning with lora"})
     lora_r: int = field(default=16, metadata={"help": "lora r"})
+    load_pretrained_lora: bool = field(default=False, metadata={"help": "load a pre-trained lora model"})
     lora_alpha: int = field(default=64, metadata={"help": "lora alpha"})
     lora_dropout: float = field(default=0.1, metadata={"help": "lora dropout"})
     lora_target_modules: str = field(default="qkv_proj,o_proj,gate_up_proj,down_proj,k_proj,q_proj,out_proj,v_proj", metadata={"help": "lora target modules"})
