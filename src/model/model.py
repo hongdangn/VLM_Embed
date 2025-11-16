@@ -283,7 +283,7 @@ class MMEBModel(nn.Module):
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.bfloat16,
                 config=config,
-                **kwargs
+                # **kwargs
             )
         else:
             config.use_cache = False

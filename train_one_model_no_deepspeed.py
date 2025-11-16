@@ -150,7 +150,7 @@ def finetune(
         )
         
         train_iter = iter(train_dataloader)
-        device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
             
         for batch in progress_bar:

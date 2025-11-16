@@ -312,8 +312,8 @@ class DistillationDataset(Dataset):
                 print_rank("Preprocessed WebQA to remove <image_1> tokens in queries.")
 
             total_samples = len(subset_data)
-            num_samples_to_keep = math.ceil(total_samples * 0.3)
-            subset_data = subset_data.select(range(num_samples_to_keep))
+            # num_samples_to_keep = math.ceil(total_samples * 0.3)
+            # subset_data = subset_data.select(range(num_samples_to_keep))
             subset_data = subset_data.add_column("pos_text_instruction", [POS_MOD_DICT.get(subset, "") + text for text in subset_data['pos_text']])
             subset_data = subset_data.remove_columns(set(['neg_text', 'neg_image_path']) & set(subset_data.column_names))
             subset_data = subset_data.remove_columns(set(subset_data.column_names) - set(['qry', 'qry_image_path', 'pos_image_path', 'pos_text_instruction']))

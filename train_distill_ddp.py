@@ -84,7 +84,8 @@ def ddp_setup():
 class Trainer:
     def __init__(self, distiller, train_data, optimizer, lr_scheduler, criterion, model_args, training_args):
         print_rank("Initializing Trainer...")
-        self.gpu_id = int(os.environ['LOCAL_RANK'])
+        # self.gpu_id = int(os.environ['LOCAL_RANK'])
+        self.gpu_id = 1
         self.device = torch.device(f'cuda:{self.gpu_id}')
         self.distiller = distiller.to(self.device)
         self.train_data = train_data
@@ -123,8 +124,9 @@ class Trainer:
         
     def run_epoch(self, epoch):
         self.train_data.sampler.set_epoch(epoch)
-        total_losses, contrastive_losses, rkd_losses, simple_kd_losses = [], [], [], []
-        intra_rkd_losses, cross_modal_kd_losses, ot_losses, img_align_losses = [], [], [], []
+        # total_losses, contrastive_losses, rkd_losses, simple_kd_losses = [], [], [], []
+        # intra_rkd_losses, cross_modal_kd_losses, ot_losses, img_align_losses = [], [], [], []
+        losses = {}
         
         progress_bar = tqdm(total=len(self.train_data.dataset) // self.training_args.per_device_train_batch_size // self.training_args.gradient_accumulation_steps // dist.get_world_size(), 
                             desc=f"Epoch {epoch}",
@@ -133,51 +135,28 @@ class Trainer:
             batch = to_device(batch, self.device)
             with torch.autocast(enabled=True, dtype=torch.bfloat16, device_type='cuda'):
                 loss_dict = self.distiller(self.criterion, batch)
+            
+            if batch_idx == 0:
+                losses = {loss_type: [] for loss_type in loss_dict}
+            
+            for loss_type in losses:
+                batch_loss = loss_dict.get(loss_type, torch.tensor(0.0))
+                losses[loss_type].append(batch_loss.detach().item())
 
             total_loss = loss_dict['total_loss'] / self.training_args.gradient_accumulation_steps
-            contrastive_loss = loss_dict['contrastive_loss']
-            rkd_loss = loss_dict.get('rkd_loss', torch.tensor(0.0))
-            simple_kd_loss = loss_dict.get('simple_kd_loss', torch.tensor(0.0))
-            intra_rkd_loss = loss_dict.get('intra_rkd_loss', torch.tensor(0.0))
-            cross_modal_kd_loss = loss_dict.get('cross_modal_kd_loss', torch.tensor(0.0))
-            ot_loss = loss_dict.get('ot_loss', torch.tensor(0.0))
-            img_align_loss = loss_dict.get('img_align_loss', torch.tensor(0.0))
-
-            total_losses.append(loss_dict['total_loss'].detach().item())
-            contrastive_losses.append(contrastive_loss.detach().item())
-            rkd_losses.append(rkd_loss.detach().item())
-            simple_kd_losses.append(simple_kd_loss.detach().item())
-            intra_rkd_losses.append(intra_rkd_loss.detach().item())
-            cross_modal_kd_losses.append(cross_modal_kd_loss.detach().item())
-            ot_losses.append(ot_loss.detach().item())
-            img_align_losses.append(img_align_loss.detach().item())
-            
-            batch_loss = sum(total_losses)/len(total_losses)
-            batch_contrastive_loss = sum(contrastive_losses)/len(contrastive_losses)
-            batch_rkd_loss = sum(rkd_losses)/len(rkd_losses)
-            batch_simple_kd_loss = sum(simple_kd_losses)/len(simple_kd_losses)
-            batch_kd_rkd_loss = sum(intra_rkd_losses)/len(intra_rkd_losses)
-            batch_kd_dtw_loss = sum(cross_modal_kd_losses)/len(cross_modal_kd_losses)
-            batch_ot_loss = sum(ot_losses)/len(ot_losses)
-            batch_img_align_loss = sum(img_align_losses)/len(img_align_losses)
-            
             total_loss.backward()
+            
             if (batch_idx + 1) % self.training_args.gradient_accumulation_steps == 0:
                 self.optimizer.step()
                 self.lr_scheduler.step()
                 self.optimizer.zero_grad()
             
             if is_main_process():
-                progress_bar.set_postfix({
-                    "loss": f"{batch_loss:.4f}",
-                    "contrastive_loss": f"{batch_contrastive_loss:.4f}",
-                    "rkd_loss": f"{batch_rkd_loss:.4f}",
-                    "simple_kd_loss": f"{batch_simple_kd_loss:.4f}",
-                    "intra_rkd_loss": f"{batch_kd_rkd_loss:.4f}",
-                    "cross_modal_kd_loss": f"{batch_kd_dtw_loss:.4f}",
-                    "img_align_loss": f"{batch_img_align_loss:.4f}",
-                    "ot_loss": f"{batch_ot_loss:.4f}",
-                })
+                postfix_batch_loss = {
+                    loss_type: f"{(sum(losses[loss_type]) / len(losses[loss_type])):.4f}"
+                    for loss_type in losses
+                }
+                progress_bar.set_postfix(postfix_batch_loss)
                 progress_bar.update(1)
                 # if "wandb" in self.training_args.report_to:
                 #     wandb.log({

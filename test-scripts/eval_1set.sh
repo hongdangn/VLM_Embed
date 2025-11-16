@@ -11,15 +11,16 @@
 set -e
 
 # --- Configuration Variables ---
-MODEL_NAME="dangnguyens1/sft-fastvlm-2e"
+MODEL_NAME="/home/mcn/VLM_Embed/training/uld_fastvlm_cls_vqa/checkpoint-epoch-0"
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
-IMAGE_DIR="/home/mcn/VLM_Embed/eval-images"
-BATCH_SIZE=8
+IMAGE_DIR="/home/mcn/VLM_Embed/eval-data"
+BATCH_SIZE=2
 
 # List of all dataset subsets to evaluate
 # datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007 Place365 ImageNet-A ImageNet-R ObjectNet Country211) 
-datasets=(CIRR)
+datasets=(OK-VQA VOC2007)
+# datasets=(CIRR)
 
 # --- End Configuration ---
 # --- End Configuration ---

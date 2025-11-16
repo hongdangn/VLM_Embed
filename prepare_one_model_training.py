@@ -85,7 +85,7 @@ class OneModelTrainer(nn.Module):
         if self.model_args.lora:
             print("Load model with lora rank:", self.model_args.lora_r)
             print("Student use lora:", self.model_args.lora)
-        model = MMEBModel.build(self.model_args, device_map="auto")
+        model = MMEBModel.build(self.model_args)
         model.train()
         model.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
         print("Model built.")

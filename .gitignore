@@ -13,6 +13,7 @@
 /test-save
 /eval-data
 /eval-images
+/env-fake
 # /test-scripts
 /eval-res
 __pycache__

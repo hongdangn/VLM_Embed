@@ -6,7 +6,8 @@ class UniversalLogitDistillation(nn.Module):
     def __init__(self, args):
         super(UniversalLogitDistillation, self).__init__()
         self.args = args
-        self.kd_loss_weight = self.args.kd_weight
+        self.kd_loss_weight = 0.01
+        self.mse = nn.MSELoss()
         
     def forward(self, distiller, input_data):
         self.distiller = distiller
@@ -19,11 +20,11 @@ class UniversalLogitDistillation(nn.Module):
         teacher_input_qry = input_data['teacher_inputs']['qry']
         teacher_input_pos = input_data['teacher_inputs']['pos']
         with torch.no_grad():
-            teacher_qry_reps, _, _ = teacher_model.encode_input(teacher_input_qry)
-            teacher_pos_reps, _, _ = teacher_model.encode_input(teacher_input_pos)
+            teacher_qry_reps = teacher_model.encode_input(teacher_input_qry)[0]
+            teacher_pos_reps = teacher_model.encode_input(teacher_input_pos)[0]
 
-        student_qry_reps, _, _ = student_model.encode_input(student_input_qry)
-        student_pos_reps, _, _ = student_model.encode_input(student_input_pos)
+        student_qry_reps = student_model.encode_input(student_input_qry)[0]
+        student_pos_reps = student_model.encode_input(student_input_pos)[0]
 
         scores = student_model.compute_similarity(student_qry_reps, student_pos_reps)
         scores = scores.view(student_qry_reps.size(0), -1)
@@ -35,7 +36,7 @@ class UniversalLogitDistillation(nn.Module):
         
         total_loss = contrastive_loss + kd_loss
         return {
-            "loss": total_loss, 
+            "total_loss": total_loss, 
             "contrastive_loss": contrastive_loss,
             "kd_loss": kd_loss,
         }
@@ -57,5 +58,5 @@ class UniversalLogitDistillation(nn.Module):
                 [student_pos_reps, torch.zeros_like(student_pos_reps[:, :(-size_gap)])], dim=-1
             )
 
-        uld_loss = (F.mse_loss(student_qry_reps, teacher_qry_reps) + F.mse_loss(student_pos_reps, teacher_pos_reps) + F.mse_loss(student_qry_reps, teacher_pos_reps) + F.mse_loss(student_pos_reps, teacher_qry_reps)) / 4.0
+        uld_loss = (self.mse(student_qry_reps, teacher_qry_reps) + self.mse(student_pos_reps, teacher_pos_reps)) / 2.0
         return uld_loss
