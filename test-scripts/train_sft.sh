@@ -22,11 +22,11 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --rdzv-endpoint=localhost:29501 $TR
     --dataset_split "original" \
     --model_backbone "llava_qwen2" \
     --image_dir "./vlm2vec_train/MMEB-train/" \
-    --output_dir "training/sft_ground" \
-    --per_device_train_batch_size 14 \
+    --output_dir "training/sft_ground_2" \
+    --per_device_train_batch_size 6 \
     --gradient_accumulation_steps 2 \
     --learning_rate 1e-4 \
-    --num_train_epochs 5 \
+    --num_train_epochs 1 \
     --bf16 \
     --save_total_limit 2 \
     --logging_steps 1 \
@@ -35,6 +35,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --rdzv-endpoint=localhost:29501 $TR
     --weight_decay 0.01 \
     --normalize True \
     --lr_scheduler_type "cosine" \
+    --kd_loss_type contrastive \
     --warmup_ratio 0.03 \
     --image_resolution mid \
     --projector_config_path "./config/projector_config.json" \

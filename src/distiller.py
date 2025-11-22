@@ -116,7 +116,7 @@ class Distiller(nn.Module):
 
         # for Soft-DTW
         self.num_chosen_hidden_states = 3
-        self.t2s = nn.ModuleList([
+        self.t2s_dtw = nn.ModuleList([
             nn.Sequential(
                 nn.Linear(self.teacher_hidden_dim, self.student_hidden_dim),
                 nn.ReLU()
@@ -312,8 +312,8 @@ class DistillationDataset(Dataset):
                 print_rank("Preprocessed WebQA to remove <image_1> tokens in queries.")
 
             total_samples = len(subset_data)
-            # num_samples_to_keep = math.ceil(total_samples * 0.3)
-            # subset_data = subset_data.select(range(num_samples_to_keep))
+            num_samples_to_keep = math.ceil(total_samples * 1.0)
+            subset_data = subset_data.select(range(num_samples_to_keep))
             subset_data = subset_data.add_column("pos_text_instruction", [POS_MOD_DICT.get(subset, "") + text for text in subset_data['pos_text']])
             subset_data = subset_data.remove_columns(set(['neg_text', 'neg_image_path']) & set(subset_data.column_names))
             subset_data = subset_data.remove_columns(set(subset_data.column_names) - set(['qry', 'qry_image_path', 'pos_image_path', 'pos_text_instruction']))

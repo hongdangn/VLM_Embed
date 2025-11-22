@@ -1,26 +1,22 @@
-#!/bin/bash
-#
-# Script to run the model evaluation on multiple MMEB subsets sequentially.
-#
-# Usage:
-# 1. Save this content as 'run_all_evals.sh'.
-# 2. Make it executable: chmod +x run_all_evals.sh
-# 3. Run the script: ./run_all_evals.sh
-
-# Exit immediately if any command fails
+#sft cls e1, sft vqa e7, sft ret e3, sft ground e1
+#rkd vqa e0, rkd cls e0
+#uld cls e0, uld vqa e1, uld ret e0
+#ours cls e0, ours vqa e0, ours ret e0
 set -e
 
 # --- Configuration Variables ---
-MODEL_NAME="/home/mcn/VLM_Embed/training/uld_fastvlm_cls_vqa/checkpoint-epoch-0"
+MODEL_NAME="/home/mcn/VLM_Embed/training/ours_ground/checkpoint-epoch-0"
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
 IMAGE_DIR="/home/mcn/VLM_Embed/eval-data"
-BATCH_SIZE=2
+BATCH_SIZE=5
 
 # List of all dataset subsets to evaluate
 # datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007 Place365 ImageNet-A ImageNet-R ObjectNet Country211) 
-datasets=(OK-VQA VOC2007)
+# datasets=(MSCOCO)
+# datasets=(VOC2007)
 # datasets=(CIRR)
+datasets=(OK-VQA)
 
 # --- End Configuration ---
 # --- End Configuration ---

@@ -155,7 +155,7 @@ class TrainOneModelDataset(Dataset):
     def __init__(self, data_args, model_args):
         self.data_args = data_args
         self.model_args = model_args
-        self.percentage = 1
+        self.percentage = 0.05
         print(self.model_args.model_backbone)
         train_data = []
         

@@ -1,15 +1,18 @@
-from .contrastive_loss import ContrastiveLoss
+from .rkd import ContrastiveLossWithRKD
 from .proposal_loss_with_DTW import ProposalLossWithDTW
 from .universal_logit_distillation import UniversalLogitDistillation
 from .propose_with_proj import ProposalLossWithProj
 from .proposed_loss import StrongerKD
+from .contrastive import ContrastiveLoss
+from .ours import ProposalLossWithDTW
 
 criterion_list = {
-    "contrastive_rkd": ContrastiveLoss,
-    "proposal_dtw": ProposalLossWithDTW,
-    "universal_logit": UniversalLogitDistillation,
+    "rkd": ContrastiveLossWithRKD,
+    "ours": ProposalLossWithDTW,
+    "uld": UniversalLogitDistillation,
     "proposal_proj": ProposalLossWithProj,
-    "dang_propose": StrongerKD
+    "contrastive": ContrastiveLoss,
+    "dang_propose": StrongerKD,
 }
 
 def build_criterion(args):

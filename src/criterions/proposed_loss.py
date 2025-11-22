@@ -219,7 +219,7 @@ class StrongerKD(nn.Module):
             t_dist = F.softmax(t_attn[l - 1].mean(dim=1)[:, -1], dim=-1) # (b, m)
 
             s_hidden_state = s_hidden_states[l] # (b, n, emb_dim)
-            proj_t_hidden_state = self.distiller.t2s[l - start_layer](t_hidden_states[scale * l]) # (b, m, emb_dim)
+            proj_t_hidden_state = self.distiller.t2s_dtw[l - start_layer](t_hidden_states[scale * l]) # (b, m, emb_dim)
 
             for b in range(s_dist.size(0)):
                 # cost_matrix = 1 - torch.matmul(s_hidden_state[b], proj_t_hidden_state[b].T) # (n, m)
@@ -320,8 +320,8 @@ class StrongerKD(nn.Module):
                         s_img_hidden_states = F.normalize(s_hidden_states[l][b][:num_s_img_tokens]).to(torch.float32)
                         s_text_hidden_states = F.normalize(s_hidden_states[l][b][num_s_img_tokens:]).to(torch.float32)
 
-                        proj_t_img_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][:num_t_img_tokens])).to(torch.float32)
-                        proj_t_text_hidden_states = F.normalize(self.distiller.t2s[l - start_layer](t_hidden_states[scale * l][b][num_t_img_tokens:])).to(torch.float32)
+                        proj_t_img_hidden_states = F.normalize(self.distiller.t2s_dtw[l - start_layer](t_hidden_states[scale * l][b][:num_t_img_tokens])).to(torch.float32)
+                        proj_t_text_hidden_states = F.normalize(self.distiller.t2s_dtw[l - start_layer](t_hidden_states[scale * l][b][num_t_img_tokens:])).to(torch.float32)
                         
                         
                         loss += 0.5 * self.sdtw(s_img_hidden_states.unsqueeze(0), proj_t_text_hidden_states.unsqueeze(0)).mean()

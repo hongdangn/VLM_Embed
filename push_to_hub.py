@@ -29,7 +29,6 @@ def push_to_hub(repo_name=None, token=None, commit_message="Upload model",
     
 if __name__ == "__main__":
     push_to_hub(
-        repo_name="dangnguyens1/sft-fastvlm-ret",
-        token="", # assign the api key from HF to this param
-        local_dir="/home/mcn/VLM_Embed/training/sft_ret/checkpoint-epoch5"
+        repo_name="dangnguyens1/test",
+        local_dir="/home/mcn/VLM_Embed/test"
     )

@@ -6,5 +6,9 @@
     "t2s_txt": {
         "enabled": true,
         "structure": "t-s"
+    },
+    "t2s":{
+        "enabled": true,
+        "structure": "t-s"
     }
 }

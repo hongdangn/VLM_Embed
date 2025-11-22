@@ -85,7 +85,7 @@ class Trainer:
     def __init__(self, distiller, train_data, optimizer, lr_scheduler, criterion, model_args, training_args):
         print_rank("Initializing Trainer...")
         # self.gpu_id = int(os.environ['LOCAL_RANK'])
-        self.gpu_id = 1
+        self.gpu_id = 0
         self.device = torch.device(f'cuda:{self.gpu_id}')
         self.distiller = distiller.to(self.device)
         self.train_data = train_data
@@ -189,10 +189,13 @@ class Trainer:
             self.run_epoch(epoch)
             if self.training_args.save_strategy == "epoch":
                 ckpt_dir = os.path.join(self.training_args.output_dir, f"checkpoint-epoch-{epoch}")
+                projector_dir = os.path.join(self.training_args.output_dir, "mm_projector.pth")
                 os.makedirs(ckpt_dir, exist_ok=True)
                 
                 student = self.distiller.module.student
                 student.encoder.save_pretrained(ckpt_dir)
+                torch.save(student.encoder.model.model.mm_projector.state_dict(), projector_dir)
+
                 student_config = AutoConfig.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
                 tokenizer = AutoTokenizer.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
                 if student_config:
@@ -212,6 +215,11 @@ class Trainer:
             os.makedirs(final_ckpt_dir, exist_ok=True)
             student = self.distiller.module.student
             student.encoder.save_pretrained(final_ckpt_dir)
+
+            projector_dir = os.path.join(self.training_args.output_dir, "mm_projector.pth")
+            torch.save(student.encoder.model.model.mm_projector.state_dict(), projector_dir)
+            print("Saved the student's lora model and projector")
+
             student_config = AutoConfig.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
             tokenizer = AutoTokenizer.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
             if student_config:
@@ -242,6 +250,11 @@ def main():
     
     
     distiller = Distiller(model_args, training_args)
+
+    for name, param in distiller.student.named_parameters():
+        if "mm_projector" in name:
+            param.requires_grad = True
+
     train_dataset = prepare_dataset(data_args, model_args)
     dist_sampler = DistributedSampler(train_dataset, shuffle=True)
     for n, p in distiller.student.named_parameters():
@@ -263,10 +276,14 @@ def main():
         drop_last=True,
         pin_memory=False,
     )
-    params_to_optimize = list(distiller.student.parameters()) + \
-                         list(distiller.t2s_img_align.parameters()) + \
-                         list(distiller.last_layer_projector.parameters()) + \
-                         list(distiller.t2s.parameters())
+    # params_to_optimize = list(distiller.student.parameters()) + \
+    #                      list(distiller.t2s_img_align.parameters()) + \
+    #                      list(distiller.last_layer_projector.parameters()) + \
+    #                      list(distiller.t2s.parameters())
+                        #  list(distiller.projectors["t2s_txt"].parameters()) + \
+                        #  list(distiller.projectors["t2s_img"].parameters())
+
+    params_to_optimize = list(distiller.student.parameters())
 
     optimizer = AdamW(
         params_to_optimize,

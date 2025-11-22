@@ -259,7 +259,10 @@ def main():
     num_trainable_vision = 0
 
     for n, p in model_trainer.model.named_parameters():
-        if p.requires_grad:  # thường chỉ là LoRA
+        if "mm_projector" in n:
+            p.requires_grad = True
+
+        if p.requires_grad: 
             p.data = p.data.to(torch.bfloat16)
 
             if "vision" in n:

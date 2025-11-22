@@ -4,6 +4,7 @@ import torch.distributed as dist
 from torch import nn, Tensor
 from transformers import PreTrainedModel, AutoModelForCausalLM, AutoConfig, AutoTokenizer
 from peft import LoraConfig, get_peft_model, PeftModel
+import os
 from src.arguments import ModelArguments, TrainingArguments
 from src.model.processor import LLAVA_NEXT, QWEN2_VL, PHI3V, get_backbone_name, print_master, QWEN2_5_VL, \
     backbone2model, QWEN2_VL_TOKENSELECTION, QWEN2_5_VL_TOKENSELECTION, LLAVA_ONEVISION, LLAVA_QWEN2
@@ -298,9 +299,20 @@ class MMEBModel(nn.Module):
             model_name_or_path = model_args.checkpoint_path if model_args.checkpoint_path else model_args.model_name
             print_master(f'Loading Pre-trained LoRA model from {model_name_or_path}')
             lora_config = LoraConfig.from_pretrained(model_name_or_path)
-            lora_model = PeftModel.from_pretrained(base_model, model_name_or_path, config=lora_config, is_trainable=True)
-            # lora_model.load_adapter(model_name_or_path, lora_model.active_adapter, is_trainable=True)
-            # lora_model = lora_model.merge_and_unload()
+
+            lora_model = PeftModel.from_pretrained(base_model, 
+                                                   model_name_or_path, 
+                                                   config=lora_config,
+                                                   is_trainable=True)
+            lora_model.config.modules_to_save = ['mm_projector']
+            lora_model.peft_config['default'].modules_to_save = ['mm_projector']
+            projector_path = os.path.join(model_name_or_path, "mm_projector.pth")
+
+            if os.path.exists(projector_path):
+                lora_model.base_model.model.model.mm_projector.load_state_dict(
+                    torch.load(projector_path)
+                )
+                print("Successfully loading the projector's weight")
 
             model = cls(
                 encoder=lora_model,
