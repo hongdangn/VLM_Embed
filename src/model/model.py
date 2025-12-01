@@ -192,12 +192,12 @@ class MMEBModel(nn.Module):
     @classmethod
     def build(cls, model_args: ModelArguments, **kwargs):
         INTERNVIDEO2 = "internvideo2"
-        if model_args.lora:
-            peft_config = PeftConfig.from_pretrained(model_args.model_name)   
-            config = AutoConfig.from_pretrained(peft_config.base_model_name_or_path, trust_remote_code=True)
-        else:
-            config = AutoConfig.from_pretrained(model_args.model_name, trust_remote_code=True)
-
+        # if model_args.lora:
+        #     peft_config = PeftConfig.from_pretrained(model_args.model_name)   
+        #     config = AutoConfig.from_pretrained(peft_config.base_model_name_or_path, trust_remote_code=True)
+        # else:
+        #     config = AutoConfig.from_pretrained(model_args.model_name, trust_remote_code=True)
+        config = AutoConfig.from_pretrained(model_args.model_name, trust_remote_code=True)
 
         model_backbone = get_backbone_name(hf_config=config)
         setattr(model_args, 'model_backbone', model_backbone)
@@ -304,8 +304,8 @@ class MMEBModel(nn.Module):
                                                    model_name_or_path, 
                                                    config=lora_config,
                                                    is_trainable=True)
-            lora_model.config.modules_to_save = ['mm_projector']
-            lora_model.peft_config['default'].modules_to_save = ['mm_projector']
+            # lora_model.config.modules_to_save = ['mm_projector']
+            # lora_model.peft_config['default'].modules_to_save = ['mm_projector']
             projector_path = os.path.join(model_name_or_path, "mm_projector.pth")
 
             if os.path.exists(projector_path):
@@ -430,7 +430,16 @@ class MMEBModel(nn.Module):
             lora_config = LoraConfig.from_pretrained(model_name_or_path)
             lora_model = PeftModel.from_pretrained(base_model, model_name_or_path, config=lora_config, is_trainable=is_trainable)
             lora_model.load_adapter(model_name_or_path, lora_model.active_adapter, is_trainable=is_trainable)
-            lora_model = lora_model.merge_and_unload()
+
+            projector_path = os.path.join(model_name_or_path, "mm_projector.pth")
+
+            if os.path.exists(projector_path):
+                lora_model.base_model.model.model.mm_projector.load_state_dict(
+                    torch.load(projector_path)
+                )
+                print("Successfully loading the projector's weight")
+                
+            # lora_model = lora_model.merge_and_unload()
 
             model = cls(
                 encoder=lora_model,

@@ -80,7 +80,8 @@ def ddp_setup():
 class Trainer:
     def __init__(self, trainer, train_data, optimizer, lr_scheduler, criterion, model_args, training_args):
         print_rank("Initializing Trainer...")
-        self.gpu_id = int(os.environ['LOCAL_RANK'])
+        # self.gpu_id = int(os.environ['LOCAL_RANK'])
+        self.gpu_id = 0
         self.device = torch.device(f'cuda:{self.gpu_id}')
         self.trainer = trainer.to(self.device)
         self.train_data = train_data
@@ -181,10 +182,13 @@ class Trainer:
             self.run_epoch(epoch)
             if self.training_args.save_strategy == "epoch":
                 ckpt_dir = os.path.join(self.training_args.output_dir, f"checkpoint-epoch-{epoch}")
+                projector_dir = os.path.join(ckpt_dir, "mm_projector.pth")
                 os.makedirs(ckpt_dir, exist_ok=True)
                 
-                student = self.trainer.model
+                student = self.trainer.module.model
                 student.encoder.save_pretrained(ckpt_dir)
+                torch.save(student.encoder.model.model.mm_projector.state_dict(), projector_dir)
+
                 student_config = AutoConfig.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
                 tokenizer = AutoTokenizer.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
                 if student_config:
@@ -198,25 +202,6 @@ class Trainer:
                 except Exception as e:
                     print_rank(f"Warning: Could not save processor: {e}")
                 print_rank(f"Saved checkpoint to {ckpt_dir}")
-                
-        if is_main_process():
-            final_ckpt_dir = os.path.join(self.training_args.output_dir, f"checkpoint-final")
-            os.makedirs(final_ckpt_dir, exist_ok=True)
-            student = self.model_trainer.model
-            student.encoder.save_pretrained(final_ckpt_dir)
-            student_config = AutoConfig.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
-            tokenizer = AutoTokenizer.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
-            if student_config:
-                student_config.save_pretrained(final_ckpt_dir)
-            if tokenizer:
-                tokenizer.save_pretrained(final_ckpt_dir)
-            try:
-                processor = AutoProcessor.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
-                if processor:
-                    processor.save_pretrained(final_ckpt_dir)
-            except Exception as e:
-                print_rank(f"Warning: Could not save processor: {e}")
-            print_rank(f"Saved final model to {final_ckpt_dir}")
                 
                 
 def main():
@@ -264,9 +249,7 @@ def main():
 
         if p.requires_grad: 
             p.data = p.data.to(torch.bfloat16)
-
-            if "vision" in n:
-                num_trainable_vision += p.numel()
+            num_trainable_vision += p.numel()
 
     print(f"Number of Vision Tower's trainable parameters: {num_trainable_vision}")
 

@@ -85,7 +85,7 @@ class Trainer:
     def __init__(self, distiller, train_data, optimizer, lr_scheduler, criterion, model_args, training_args):
         print_rank("Initializing Trainer...")
         # self.gpu_id = int(os.environ['LOCAL_RANK'])
-        self.gpu_id = 0
+        self.gpu_id = 1
         self.device = torch.device(f'cuda:{self.gpu_id}')
         self.distiller = distiller.to(self.device)
         self.train_data = train_data
@@ -216,7 +216,7 @@ class Trainer:
             student = self.distiller.module.student
             student.encoder.save_pretrained(final_ckpt_dir)
 
-            projector_dir = os.path.join(self.training_args.output_dir, "mm_projector.pth")
+            projector_dir = os.path.join(final_ckpt_dir, "mm_projector.pth")
             torch.save(student.encoder.model.model.mm_projector.state_dict(), projector_dir)
             print("Saved the student's lora model and projector")
 

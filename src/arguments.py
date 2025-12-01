@@ -98,7 +98,7 @@ class TrainingArguments(TrainingArguments):
     kd_weight: float = field(default=0.01, metadata={"help": "weight of kd loss in total loss"})
     rkd_distance_weight: float = field(default=1.0, metadata={"help": "weight of distance loss in total kd loss"})
     rkd_angle_weight: float = field(default=2.0, metadata={"help": "weight of angle loss in total kd loss"})
-    kd_loss_type: str = field(default="contrastive_rkd", metadata={"help": "type of kd loss, current only support RKD"})
+    kd_loss_type: str = field(default="contrastive", metadata={"help": "type of kd loss, current only support RKD"})
     ds_config: str = field(default=None, metadata={"help": "DeepSpeed config json file path"})
     deepspeed_config: str = field(default=None, metadata={"help": "DeepSpeed config json file path"})
 
