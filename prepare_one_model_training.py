@@ -171,7 +171,7 @@ class TrainOneModelDataset(Dataset):
                 )
                 print_rank("Preprocessed WebQA to remove <image_1> tokens in queries.")
 
-            subset_data = subset_data.select(range(int(self.percentage * len(subset_data))))
+            # subset_data = subset_data.select(range(int(self.percentage * len(subset_data))))
             subset_data = subset_data.add_column("pos_text_instruction", [POS_MOD_DICT.get(subset, "") + text for text in subset_data['pos_text']])
             subset_data = subset_data.remove_columns(set(['neg_text', 'neg_image_path']) & set(subset_data.column_names))
             subset_data = subset_data.remove_columns(set(subset_data.column_names) - set(['qry', 'qry_image_path', 'pos_image_path', 'pos_text_instruction']))

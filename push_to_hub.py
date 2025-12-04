@@ -29,6 +29,6 @@ def push_to_hub(repo_name=None, token=None, commit_message="Upload model",
     
 if __name__ == "__main__":
     push_to_hub(
-        repo_name="dangnguyens1/test",
-        local_dir="/home/mcn/VLM_Embed/test"
+        repo_name="dangnguyens1/sft_meta_cls_e0",
+        local_dir="/home/mcn/VLM_Embed/training/sft_meta_cls/checkpoint-epoch-0"
     )

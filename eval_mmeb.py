@@ -102,15 +102,15 @@ def main():
     # ToDo: This part of code is a little bit hacky. Need to refactor later.
     for idx, subset in enumerate(data_args.subset_name):
         score_path = os.path.join(data_args.encode_output_path, f"{subset}_score.json")
-        if os.path.exists(score_path):
-            try:
-                with open(score_path, "r") as f:
-                    score_dict = json.load(f)
-                print(f"Found previous eval score, skipping {subset}")
-                print(score_dict)
-                continue
-            except Exception as e:
-                pass
+        # if os.path.exists(score_path):
+        #     try:
+        #         with open(score_path, "r") as f:
+        #             score_dict = json.load(f)
+        #         print(f"Found previous eval score, skipping {subset}")
+        #         print(score_dict)
+        #         continue
+        #     except Exception as e:
+        #         pass
 
         print(f"\033[91m{idx+1}/{len(data_args.subset_name)}: Processing {subset} now!\033[0m")
         encode_qry_path = os.path.join(data_args.encode_output_path, f"{subset}_qry")
@@ -179,15 +179,15 @@ def main():
     for subset in tqdm(data_args.subset_name, desc="Iterate datasets to calculate scores"):
         print(f"\033[91m{subset}: Calculating score now!\033[0m")
         score_path = os.path.join(data_args.encode_output_path, f"{subset}_score.json")
-        if os.path.exists(score_path):
-            try:
-                with open(score_path, "r") as f:
-                    score_dict = json.load(f)
-                print(f"Found previous eval score, skipping {subset}")
-                print(score_dict)
-                continue
-            except Exception as e:
-                pass
+        # if os.path.exists(score_path):
+        #     try:
+        #         with open(score_path, "r") as f:
+        #             score_dict = json.load(f)
+        #         print(f"Found previous eval score, skipping {subset}")
+        #         print(score_dict)
+        #         continue
+        #     except Exception as e:
+        #         pass
 
         encode_qry_path = os.path.join(data_args.encode_output_path, f"{subset}_qry")
         encode_tgt_path = os.path.join(data_args.encode_output_path, f"{subset}_tgt")

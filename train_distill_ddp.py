@@ -189,7 +189,7 @@ class Trainer:
             self.run_epoch(epoch)
             if self.training_args.save_strategy == "epoch":
                 ckpt_dir = os.path.join(self.training_args.output_dir, f"checkpoint-epoch-{epoch}")
-                projector_dir = os.path.join(self.training_args.output_dir, "mm_projector.pth")
+                projector_dir = os.path.join(ckpt_dir, "mm_projector.pth")
                 os.makedirs(ckpt_dir, exist_ok=True)
                 
                 student = self.distiller.module.student
@@ -209,31 +209,11 @@ class Trainer:
                 except Exception as e:
                     print_rank(f"Warning: Could not save processor: {e}")
                 print_rank(f"Saved checkpoint to {ckpt_dir}")
-                
-        if is_main_process():
-            final_ckpt_dir = os.path.join(self.training_args.output_dir, f"checkpoint-final")
-            os.makedirs(final_ckpt_dir, exist_ok=True)
-            student = self.distiller.module.student
-            student.encoder.save_pretrained(final_ckpt_dir)
 
-            projector_dir = os.path.join(final_ckpt_dir, "mm_projector.pth")
-            torch.save(student.encoder.model.model.mm_projector.state_dict(), projector_dir)
-            print("Saved the student's lora model and projector")
-
-            student_config = AutoConfig.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
-            tokenizer = AutoTokenizer.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
-            if student_config:
-                student_config.save_pretrained(final_ckpt_dir)
-            if tokenizer:
-                tokenizer.save_pretrained(final_ckpt_dir)
-            try:
-                processor = AutoProcessor.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
-                if processor:
-                    processor.save_pretrained(final_ckpt_dir)
-            except Exception as e:
-                print_rank(f"Warning: Could not save processor: {e}")
-            print_rank(f"Saved final model to {final_ckpt_dir}")
+                ## for evaluation
+                print(f"Start evaluating student at epoch {epoch}")
                 
+
                 
 def main():
     for arg in sys.argv:
@@ -251,9 +231,15 @@ def main():
     
     distiller = Distiller(model_args, training_args)
 
+
+    num_trainable_projector = 0
+
     for name, param in distiller.student.named_parameters():
         if "mm_projector" in name:
             param.requires_grad = True
+            num_trainable_projector += param.numel()
+
+    print("Num trainable parameters: ", num_trainable_projector)
 
     train_dataset = prepare_dataset(data_args, model_args)
     dist_sampler = DistributedSampler(train_dataset, shuffle=True)
