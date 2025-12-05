@@ -84,8 +84,8 @@ def ddp_setup():
 class Trainer:
     def __init__(self, distiller, train_data, optimizer, lr_scheduler, criterion, model_args, training_args):
         print_rank("Initializing Trainer...")
-        # self.gpu_id = int(os.environ['LOCAL_RANK'])
-        self.gpu_id = 1
+        self.gpu_id = int(os.environ['LOCAL_RANK'])
+        # self.gpu_id = 0
         self.device = torch.device(f'cuda:{self.gpu_id}')
         self.distiller = distiller.to(self.device)
         self.train_data = train_data
@@ -230,8 +230,6 @@ def main():
     
     
     distiller = Distiller(model_args, training_args)
-
-
     num_trainable_projector = 0
 
     for name, param in distiller.student.named_parameters():
