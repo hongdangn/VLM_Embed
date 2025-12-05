@@ -82,7 +82,7 @@ echo "All $MODEL_NAME evaluations on all specified subsets are complete."
 echo "--------------------------------------------------------------------------"
 
 ## train vqa
-NUM_GPUS_PER_NODE=1
+NUM_GPUS_PER_NODE=4
 TRAIN_SCRIPT="train_one_model_ddp.py"
 
 torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
@@ -163,7 +163,7 @@ echo "All $MODEL_NAME evaluations on all specified subsets are complete."
 echo "--------------------------------------------------------------------------"
 
 ## train ret
-NUM_GPUS_PER_NODE=1
+NUM_GPUS_PER_NODE=4
 TRAIN_SCRIPT="train_one_model_ddp.py"
 
 torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
