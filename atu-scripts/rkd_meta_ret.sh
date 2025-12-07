@@ -31,7 +31,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
     --normalize True \
     --lr_scheduler_type "cosine" \
     --warmup_ratio 0.03 \
-    --image_resolution mid \
+    --image_resolution low \
     --kd_loss_type "rkd" \
     --projector_config_path "./config/projector_config.json" \
     --projector_lr 5e-4
