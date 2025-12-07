@@ -61,7 +61,7 @@ for SUBSET_NAME in "${datasets[@]}"; do
         --normalize True \
         --lora True \
         --lora_r 64 \
-        --gpu_id 2 \
+        --gpu_id 3 \
         --bf16 \
         --dataset_name "$DATASET_NAME" \
         --subset_name "$SUBSET_NAME" \
