@@ -83,6 +83,7 @@ class DataArguments:
 class TrainingArguments(TrainingArguments):
     image_encoder_freeze: bool = field(default=False, metadata={"help": "huggingface model name"})
     output_dir: str = field(default=None, metadata={"help": "directory for saving trained models"})
+    gpu_id: int = field(default=0, metadata={"help": "GPU id to use"})
     resume_from: str = field(default="none", metadata={"help": "`auto` will detect if any previous checkpoints should be resumed. or specify specific step of the checkpoint."})
     project_name: str = field(default=None, metadata={"help": "project name"})
     logging_steps: int = field(default=1, metadata={"help": "logging steps"})
@@ -92,6 +93,7 @@ class TrainingArguments(TrainingArguments):
     gc_p_chunk_size: int = field(default=128, metadata={"help": "target side subset size. Should be power of 2"})
     interleave_stopping_strategy: str = field(default="all_exhausted", metadata={"help": "all_exhausted or first_exhausted"})
     interleave_batch_size: float = field(default=0, metadata={"help": "Specify mini-batch size to interleave data from multi-sources, 0/None means random sampling by examples, 1 means full batch."})
+
     #!new args
     gc_dynamic_limit: int = field(default=125, metadata={"help": "gc_chunk default limit - (128, 125) sized matrices works for Qwen2b. gc_dynamic_limit would be 125 and gc_p|q_chunk_size would be 128"})
     #!new kd loss weight

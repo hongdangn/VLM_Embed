@@ -1,30 +1,47 @@
-#sft cls e1, sft vqa e7, sft ret e3, sft ground e1
-#rkd vqa e0, rkd cls e0
-#uld cls e0, uld vqa e1, uld ret e0
-#ours cls e0, ours vqa e0, ours ret e0
-set -e
+NUM_GPUS_PER_NODE=1
+TRAIN_SCRIPT="train_one_model_ddp.py"
 
-# --- Configuration Variables ---
-MODEL_NAME="/home/mcn/VLM_Embed/training/rkd_meta_cls/checkpoint-epoch-0"
+torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
+    --model_name "apple/FastVLM-0.5B" \
+    --gpu_id 0 \
+    --lora True \
+    --lora_r 64 \
+    --pooling "eos" \
+    --dataset_name "TIGER-Lab/MMEB-train" \
+    --subset_name "OK-VQA" "A-OKVQA" "DocVQA" "InfographicsVQA" "ChartQA" "Visual7W" \
+    --dataset_split "original" \
+    --model_backbone "llava_qwen2" \
+    --image_dir "./vlm2vec_train/MMEB-train/" \
+    --output_dir "training/sft_meta_vqa" \
+    --per_device_train_batch_size 10 \
+    --gradient_accumulation_steps 1 \
+    --learning_rate 1e-4 \
+    --num_train_epochs 1 \
+    --bf16 \
+    --save_total_limit 2 \
+    --logging_steps 1 \
+    --save_strategy "epoch" \
+    --seed 42 \
+    --weight_decay 0.01 \
+    --normalize True \
+    --lr_scheduler_type "cosine" \
+    --warmup_ratio 0.03 \
+    --image_resolution mid \
+    --projector_config_path "./config/projector_config.json" \
+    --projector_lr 5e-4
+
+MODEL_NAME="./training/sft_meta_vqa/checkpoint-epoch-0"
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
-IMAGE_DIR="/home/mcn/VLM_Embed/eval-data"
+IMAGE_DIR="./eval-data"
 BATCH_SIZE=32
 
-# List of all dataset subsets to evaluate
-datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007 Place365 ImageNet-A ImageNet-R ObjectNet Country211) 
-# datasets=(MSCOCO RefCOCO RefCOCO-Matching Visual7W-Matching)
-# datasets=(VOC2007)
-# datasets=(CIRR)
-# datasets=(OK-VQA)
-
-# --- End Configuration ---
-# --- End Configuration ---
+## eval vqa
+datasets=("OK-VQA" "A-OKVQA" "DocVQA" "InfographicsVQA" "ChartQA" "Visual7W" ScienceQA VizWiz GQA TextVQA) 
 
 echo "Starting comprehensive model evaluation for $MODEL_NAME"
 echo "Targeting ${#datasets[@]} MMEB subsets."
 
-# Loop through each dataset in the array
 for SUBSET_NAME in "${datasets[@]}"; do
     echo "=========================================================================="
     echo "   [STARTING] Evaluation for subset: $SUBSET_NAME"
@@ -37,7 +54,7 @@ for SUBSET_NAME in "${datasets[@]}"; do
         --pooling eos \
         --normalize True \
         --lora True \
-        --gpu_id 1 \
+        --gpu_id 0 \
         --lora_r 64 \
         --bf16 \
         --dataset_name "$DATASET_NAME" \

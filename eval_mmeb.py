@@ -91,7 +91,9 @@ def main():
     processor = load_processor(model_args, data_args)
     model = MMEBModel.load(model_args, is_trainable=False)
     model.eval()
-    model = model.to(training_args.device, dtype=torch.bfloat16)
+    device = f'cuda:{training_args.gpu_id}'
+    print("CUDA>>>>", device)
+    model = model.to(device, dtype=torch.bfloat16)
 
     eval_collator = EvalCollator(
         data_args=data_args,
@@ -155,8 +157,8 @@ def main():
         if not os.path.exists(encode_qry_path):
             with torch.no_grad():
                 for batch in tqdm(eval_qry_loader, desc=f"Encode query - {subset}"):
-                    batch = batch_to_device(batch, training_args.device)
-                    with torch.autocast(enabled=True, dtype=torch.bfloat16, device_type="cuda"):
+                    batch = batch_to_device(batch, device)
+                    with torch.autocast(enabled=True, dtype=torch.bfloat16, device_type=device):
                         output = model(qry=batch)
                     encoded_tensor.append(output["qry_reps"].cpu().detach().float())
             encoded_tensor = np.concatenate(encoded_tensor)
@@ -168,8 +170,8 @@ def main():
         if not os.path.exists(encode_tgt_path):
             with torch.no_grad():
                 for batch in tqdm(eval_tgt_loader, desc=f"Encode target - {subset}"):
-                    batch = batch_to_device(batch, training_args.device)
-                    with torch.autocast(enabled=True, dtype=torch.bfloat16, device_type="cuda"):
+                    batch = batch_to_device(batch, device)
+                    with torch.autocast(enabled=True, dtype=torch.bfloat16, device_type=device):
                         output = model(tgt=batch)
                     encoded_tensor.append(output["tgt_reps"].cpu().detach().float())
             encoded_tensor = np.concatenate(encoded_tensor)
@@ -229,7 +231,7 @@ def main():
             tgt_tensor = [torch.from_numpy(np.array(t)) for t in tgt_tensor]  # list of [n_token, dim] tensors
             # Pad to max n_token (dim must be the same)
             tgt_tensor = pad_sequence(tgt_tensor, batch_first=True)  # shape: [num_candidates, max_n_token, dim]
-            tgt_tensor = tgt_tensor.to("cuda")
+            tgt_tensor = tgt_tensor.to(device)
 
         # build a map for dedup
         qry_key2emb, tgt_key2emb = OrderedDict(), OrderedDict()
