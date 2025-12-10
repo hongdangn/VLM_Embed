@@ -10,6 +10,7 @@ class CKD(nn.Module):
         self.kd_loss_weight = 0.3
         self.distance_weight = 0.5
         self.angle_weight = 0.5
+        self.mse = nn.MSELoss(reduction='mean')
         
     def forward(self, distiller, input_data):
         self.distiller = distiller
@@ -21,6 +22,7 @@ class CKD(nn.Module):
         
         teacher_input_qry = input_data['teacher_inputs']['qry']
         teacher_input_pos = input_data['teacher_inputs']['pos']
+        
         with torch.no_grad():
             teacher_model.eval()
             teacher_qry_reps = teacher_model.encode_input(teacher_input_qry)[0]
@@ -49,29 +51,23 @@ class CKD(nn.Module):
         dist = norm + norm.t() - 2.0 * torch.mm(x, x.t())
         return dist
     
+    def compute_mse(self, student_qry, teacher_qry):
+        num_samples = student_qry.size(0)
+        if num_samples <= 1:
+            return 0.0
+
+        student_diffs = student_qry.unsqueeze(1) - student_qry.unsqueeze(0)
+        teacher_diffs = teacher_qry.unsqueeze(1) - teacher_qry.unsqueeze(0)
+
+        per_pair_mse = ((student_diffs - teacher_diffs) ** 2).mean(dim=2)
+
+        mask = ~torch.eye(num_samples, dtype=torch.bool, device=student_qry.device)
+        return per_pair_mse.masked_select(mask).mean()
+    
     def compute_distance_loss(self, student_qry, teacher_qry):
 
         student_repr = student_qry
-        teacher_repr = teacher_qry
+        teacher_repr = self.t2s_ckd(teacher_qry)
+        loss = self.compute_mse(student_repr, teacher_repr)
         
-        dist_student = self.pairwise_distance(student_repr)
-        dist_teacher = self.pairwise_distance(teacher_repr)
-        
-        mask = torch.triu(torch.ones_like(dist_student), diagonal=1).bool()
-        dist_student = dist_student[mask]
-        dist_teacher = dist_teacher[mask]
-        
-        mean_td = dist_teacher.mean().detach() + 1e-8
-        mean_sd = dist_student.mean().detach() + 1e-8
-        
-        dist_student = dist_student / mean_sd
-        dist_teacher = dist_teacher / mean_td
-        
-        diff = dist_student - dist_teacher
-        abs_diff = torch.abs(diff)
-        quadratic = 0.5 * (abs_diff ** 2)
-        linear = abs_diff - 0.5
-        
-        loss = torch.where(abs_diff < 1.0, quadratic, linear)
-        loss = loss.mean()
         return loss
