@@ -124,12 +124,10 @@ class Distiller(nn.Module):
         ] * self.num_chosen_hidden_states).to(dtype=torch.bfloat16)
 
         # for ckd
-        self.t2s_ckd = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(self.teacher_hidden_dim, self.student_hidden_dim),
-                nn.ReLU()
-            )
-        ] * self.num_chosen_hidden_states).to(dtype=torch.bfloat16)
+        self.t2s_ckd = nn.Sequential(
+            nn.Linear(self.teacher_hidden_dim, self.student_hidden_dim),
+            nn.ReLU()
+        ).to(dtype=torch.bfloat16)
     
     def _create_model_args(self, model_type='teacher'):
         if model_type == 'teacher': 

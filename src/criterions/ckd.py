@@ -67,7 +67,7 @@ class CKD(nn.Module):
     def compute_distance_loss(self, student_qry, teacher_qry):
 
         student_repr = student_qry
-        teacher_repr = self.t2s_ckd(teacher_qry)
+        teacher_repr = self.distiller.t2s_ckd(teacher_qry)
         loss = self.compute_mse(student_repr, teacher_repr)
         
         return loss
