@@ -1,5 +1,5 @@
 
-NUM_GPUS_PER_NODE=4
+NUM_GPUS_PER_NODE=1
 TRAIN_SCRIPT="train_distill_ddp.py"
 
 torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
@@ -19,7 +19,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
     --model_backbone "llava_qwen2" \
     --image_dir "./vlm2vec_train/MMEB-train/" \
     --output_dir "training/ckd_meta_cls" \
-    --per_device_train_batch_size 12 \
+    --per_device_train_batch_size 8 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \
     --num_train_epochs 1 \
