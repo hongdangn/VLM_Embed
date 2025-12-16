@@ -261,15 +261,9 @@ def main():
         drop_last=True,
         pin_memory=False,
     )
-    # params_to_optimize = list(distiller.student.parameters()) + \
-    #                      list(distiller.t2s_img_align.parameters()) + \
-    #                      list(distiller.last_layer_projector.parameters()) + \
-    #                      list(distiller.t2s.parameters())
-                        #  list(distiller.projectors["t2s_txt"].parameters()) + \
-                        #  list(distiller.projectors["t2s_img"].parameters())
-
     params_to_optimize = list(distiller.student.parameters()) + \
-                         list(distiller.t2s_ckd.parameters())
+                         list(distiller.t2s_img_align.parameters()) + \
+                         list(distiller.last_layer_projector.parameters())
 
     optimizer = AdamW(
         params_to_optimize,

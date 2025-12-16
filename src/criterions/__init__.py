@@ -6,6 +6,8 @@ from .proposed_loss import StrongerKD
 from .contrastive import ContrastiveLoss
 from .ours import ProposalLossWithDTW
 from .ckd import CKD
+from .emo import EMO
+from .norm_kd import NormKD
 
 criterion_list = {
     "rkd": ContrastiveLossWithRKD,
@@ -15,6 +17,8 @@ criterion_list = {
     "contrastive": ContrastiveLoss,
     "dang_propose": StrongerKD,
     "ckd": CKD,
+    "emo": EMO,
+    "norm": NormKD
 }
 
 def build_criterion(args):
