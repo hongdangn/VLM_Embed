@@ -229,10 +229,11 @@ class EMO(nn.Module):
         using full text tokens, with importance mass computed from top-k tokens
         """
         # Unpack outputs
-        student_qry_rep, student_qry_image_features, student_qry_attention, student_qry_hidden_states = student_qry_output
-        student_pos_rep, student_pos_image_features, student_pos_attention, student_pos_hidden_states = student_pos_output
-        teacher_qry_rep, teacher_qry_image_features, teacher_qry_attention, teacher_qry_hidden_states = teacher_qry_output
-        teacher_pos_rep, teacher_pos_image_features, teacher_pos_attention, teacher_pos_hidden_states = teacher_pos_output
+        # pooled_output, hidden_states.hidden_states, image_features, all_layers_embeds, attention_matrix
+        student_qry_rep, student_qry_hidden_states, student_qry_image_features, _, _ = student_qry_output
+        student_pos_rep, student_pos_hidden_states, student_pos_image_features, _, _ = student_pos_output
+        teacher_qry_rep, teacher_qry_hidden_states, teacher_qry_image_features, _, _ = teacher_qry_output
+        teacher_pos_rep, teacher_pos_hidden_states, teacher_pos_image_features, _, _ = teacher_pos_output
         
         VISION_START_TOKEN_ID = 151652
         VISION_END_TOKEN_ID = 151656

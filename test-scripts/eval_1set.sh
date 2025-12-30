@@ -5,16 +5,16 @@
 set -e
 
 # --- Configuration Variables ---
-MODEL_NAME="/home/mcn/VLM_Embed/meta_train/sft_meta_ret/checkpoint-epoch-0"
+MODEL_NAME="/mnt/disk1/aiotlab/dangnh/VLM_Embed/meta_train/ckd_meta_ret/checkpoint-epoch-0"
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
-IMAGE_DIR="/home/mcn/VLM_Embed/eval-data"
-BATCH_SIZE=4
+IMAGE_DIR="/mnt/disk1/aiotlab/dangnh/VLM_Embed/eval-data"
+BATCH_SIZE=36
 
 # List of all dataset subsets to evaluate
 # datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007 Place365 ImageNet-A ImageNet-R ObjectNet Country211) 
 # datasets=("OK-VQA" "A-OKVQA" "DocVQA" "InfographicsVQA" "ChartQA" "Visual7W" ScienceQA VizWiz GQA TextVQA) 
-datasets=(VisDial CIRR VisualNews_t2i VisualNews_i2t MSCOCO_t2i MSCOCO_i2t NIGHTS WebQA FashionIQ Wiki-SS-NQ OVEN EDIS)
+datasets=(VisDial CIRR VisualNews_t2i VisualNews_i2t MSCOCO_t2i MSCOCO_i2t NIGHTS WebQA)
 # datasets=(MSCOCO RefCOCO RefCOCO-Matching Visual7W-Matching)
 # datasets=(VOC2007)
 # datasets=(CIRR)
