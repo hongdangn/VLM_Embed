@@ -15,7 +15,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
     --dataset_name "TIGER-Lab/MMEB-train" \
     --subset_name "ImageNet_1K" "N24News" "HatefulMemes" "VOC2007" "SUN397" \
     --dataset_split "original" \
-    --model_backbone "llava_qwen2" \
+    --model_backbone "llava_onevision" \
     --image_dir "./vlm2vec_train/MMEB-train/" \
     --output_dir "training/ours_meta_llavaov_cls" \
     --per_device_train_batch_size 8 \
