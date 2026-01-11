@@ -1,4 +1,4 @@
-NUM_GPUS_PER_NODE=4
+NUM_GPUS_PER_NODE=1
 TRAIN_SCRIPT="train_distill_ddp.py"
 
 torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
