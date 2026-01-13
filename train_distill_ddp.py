@@ -195,7 +195,11 @@ class Trainer:
                 
                 student = self.distiller.module.student
                 student.encoder.save_pretrained(ckpt_dir)
-                torch.save(student.encoder.model.model.mm_projector.state_dict(), projector_dir)
+                
+                if self.model_args.model_backbone in ["llava_onevision", "llava_two_vision"]:
+                    torch.save(student.encoder.model.multi_modal_projector.state_dict(), projector_dir)
+                else:
+                    torch.save(student.encoder.model.model.mm_projector.state_dict(), projector_dir)
 
                 student_config = AutoConfig.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
                 tokenizer = AutoTokenizer.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
@@ -264,6 +268,21 @@ def main():
     params_to_optimize = list(distiller.student.parameters()) + \
                          list(distiller.t2s_img_align.parameters()) + \
                          list(distiller.last_layer_projector.parameters())
+
+    num_trainable_vision = 0
+
+    for n, p in distiller.student.named_parameters():
+            
+        if "mm_projector" in n or "multi_modal_projector" in n:
+            p.requires_grad = True
+            
+        if "lm_head" in n:
+            p.requires_grad = False
+
+        if p.requires_grad:
+            p.data = p.data.to(torch.bfloat16)
+            num_trainable_vision += p.numel()
+    print_rank(f"Number of trainable vision parameters: {num_trainable_vision}")
 
     optimizer = AdamW(
         params_to_optimize,

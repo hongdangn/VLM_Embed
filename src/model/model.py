@@ -317,9 +317,14 @@ class MMEBModel(nn.Module):
             projector_path = os.path.join(model_name_or_path, "mm_projector.pth")
 
             if os.path.exists(projector_path):
-                lora_model.base_model.model.model.mm_projector.load_state_dict(
-                    torch.load(projector_path)
-                )
+                if model_args.model_backbone in ["llava_onevision", "llava_next"]:
+                    lora_model.base_model.model.multi_modal_projector.load_state_dict(
+                        torch.load(projector_path)
+                    )
+                else:
+                    lora_model.base_model.model.model.mm_projector.load_state_dict(
+                        torch.load(projector_path)
+                    )
                 print("Successfully loading the projector's weight")
 
             model = cls(
@@ -332,15 +337,44 @@ class MMEBModel(nn.Module):
             return model
         elif model_args.lora:
             print_master(f'Initializing LoRA adapter from {base_model}')
-            lora_config = LoraConfig(
-                r=model_args.lora_r,
-                lora_alpha=model_args.lora_alpha,
-                target_modules=model_args.lora_target_modules.split(','),
-                lora_dropout=model_args.lora_dropout,
-                init_lora_weights="gaussian",
-                use_dora=True,
-                inference_mode=False
-            )
+            if model_args.model_backbone in ["llava_onevision", "llava_next"]:
+                base_targets = [t.strip() for t in model_args.lora_target_modules.split(',')]
+    
+                explicit_target_modules = []
+                
+                for name, module in base_model.named_modules():
+                    if 'language_model' in name:
+                        module_name = name.split('.')[-1]
+                        if module_name in base_targets:
+                            explicit_target_modules.append(name)
+                
+                print(f"Found {len(explicit_target_modules)} explicit target modules")
+                print(f"First 5 modules: {explicit_target_modules[:5]}")
+                
+                if not explicit_target_modules:
+                    raise ValueError(f"No modules found with targets {base_targets} in language_model!")
+                
+                lora_config = LoraConfig(
+                    r=model_args.lora_r,
+                    lora_alpha=model_args.lora_alpha,
+                    target_modules=explicit_target_modules,  # Dùng full paths
+                    lora_dropout=model_args.lora_dropout,
+                    init_lora_weights="gaussian",
+                    use_dora=True,
+                    inference_mode=False
+                )
+                print(f"Applying LoRA to vision_tower/layers: {model_args.lora_target_modules.split(',')}")
+            else:
+                    
+                lora_config = LoraConfig(
+                    r=model_args.lora_r,
+                    lora_alpha=model_args.lora_alpha,
+                    target_modules=model_args.lora_target_modules.split(','),
+                    lora_dropout=model_args.lora_dropout,
+                    init_lora_weights="gaussian",
+                    use_dora=True,
+                    inference_mode=False
+                )
             lora_model = get_peft_model(base_model, lora_config)
 
             model = cls(

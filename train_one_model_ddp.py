@@ -188,8 +188,11 @@ class Trainer:
                 
                 student = self.trainer.module.model
                 student.encoder.save_pretrained(ckpt_dir)
-                torch.save(student.encoder.model.model.mm_projector.state_dict(), projector_dir)
-
+                if self.model_args.model_backbone in ["llava_onevision", "llava_two_vision"]:
+                    torch.save(student.encoder.model.multi_modal_projector.state_dict(), projector_dir)
+                else:
+                    torch.save(student.encoder.model.model.mm_projector.state_dict(), projector_dir)
+                    
                 student_config = AutoConfig.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
                 tokenizer = AutoTokenizer.from_pretrained(self.model_args.model_name) if self.model_args.model_name else None
                 if student_config:
@@ -245,8 +248,11 @@ def main():
     num_trainable_vision = 0
 
     for n, p in model_trainer.model.named_parameters():
-        if "mm_projector" in n:
+        if "mm_projector" in n or "multi_modal_projector" in n:
             p.requires_grad = True
+        
+        if "vision_tower" in n:
+            p.requires_grad = False
 
         if p.requires_grad: 
             p.data = p.data.to(torch.bfloat16)
