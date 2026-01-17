@@ -131,7 +131,6 @@ class MMEBModel(nn.Module):
             last_hidden_state = hidden_states.hidden_states[-1]
             attention_matrix = hidden_states.attentions if hasattr(hidden_states, 'attentions') else None
             pooled_output = self._pooling(last_hidden_state, input['attention_mask'])
-
             all_layers_embeds = torch.stack([self._pooling(hidden_state, input['attention_mask']) 
                                             for hidden_state in hidden_states.hidden_states]).permute(1, 0, 2)
             

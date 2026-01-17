@@ -1,4 +1,4 @@
-MODEL_NAME=/mnt/disk1/aiotlab/dangnh/VLM_Embed/meta_train/sft_meta_llavaov_cls/checkpoint-epoch-0
+MODEL_NAME=/mnt/disk1/aiotlab/dangnh/VLM_Embed/meta_train/norm_meta_llavaov_cls/checkpoint-epoch-0
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
 IMAGE_DIR="./eval-data"

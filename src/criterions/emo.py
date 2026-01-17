@@ -62,18 +62,18 @@ class EMO(nn.Module):
         
         num_text_qry_tokens = ((teacher_qry_input['input_ids'] < 151652) | (teacher_qry_input['input_ids'] > 151656)).sum(dim=1)
         num_text_pos_tokens = ((teacher_pos_input['input_ids'] < 151652) | (teacher_pos_input['input_ids'] > 151656)).sum(dim=1)
-        batch_size = student_qry_input['input_ids'].size(0)
         with torch.no_grad():
             teacher_model.eval()
             teacher_qry_output = teacher_model.encode_input(teacher_qry_input)
             teacher_pos_output = teacher_model.encode_input(teacher_pos_input)
-            teacher_qry_reps, _, teacher_qry_image_features, _, teacher_qry_attention = teacher_qry_output
-            teacher_pos_reps, _, teacher_pos_image_features, _, teacher_pos_attention = teacher_pos_output
+            print(len(teacher_qry_output))
+            _, _, _, _, teacher_qry_attention = teacher_qry_output
+            _, _, _, _, teacher_pos_attention = teacher_pos_output
 
         student_qry_output = student_model.encode_input(student_qry_input)
         student_pos_output = student_model.encode_input(student_pos_input)
-        student_qry_reps, _, student_qry_image_features, _, student_qry_attention = student_qry_output
-        student_pos_reps, _, student_pos_image_features, _, student_pos_attention = student_pos_output
+        student_qry_reps, _, _, _, student_qry_attention = student_qry_output
+        student_pos_reps, _, _, _, student_pos_attention = student_pos_output
 
         if self.world_size > 1:
             all_student_qry_reps = self._dist_gather_tensor(student_qry_reps)
@@ -108,8 +108,8 @@ class EMO(nn.Module):
         }
         
     def extract_top_k_text_token(self, input_data, teacher_qry_attention, teacher_pos_attention, num_text_qry_tokens, num_text_pos_tokens):
-        VISION_START_TOKEN_ID = 151652
-        VISION_END_TOKEN_ID = 151656
+        VISION_START_TOKEN_ID = 151644
+        VISION_END_TOKEN_ID = 151646
         BOS_TOKEN_ID = 151643
         teacher_qry_input_ids = input_data['teacher_inputs']['qry']['input_ids']
         teacher_pos_input_ids = input_data['teacher_inputs']['pos']['input_ids']
@@ -208,7 +208,6 @@ class EMO(nn.Module):
         Returns:
             norm_importance: normalized importance scores [num_tokens]
         """
-        device = attention_weights.device
         
         if len(attention_weights.shape) == 3:
             avg_attention = attention_weights.mean(dim=0)
@@ -224,19 +223,15 @@ class EMO(nn.Module):
     def compute_ot_loss_for_retrieval(self, student_qry_output, student_pos_output, 
                                    teacher_qry_output, teacher_pos_output, 
                                    distiller, input_data, topk_results):
-        """
-        Compute OT loss for retrieval task between teacher and student hidden states
-        using full text tokens, with importance mass computed from top-k tokens
-        """
         # Unpack outputs
-        # pooled_output, hidden_states.hidden_states, image_features, all_layers_embeds, attention_matrix
-        student_qry_rep, student_qry_hidden_states, student_qry_image_features, _, _ = student_qry_output
-        student_pos_rep, student_pos_hidden_states, student_pos_image_features, _, _ = student_pos_output
-        teacher_qry_rep, teacher_qry_hidden_states, teacher_qry_image_features, _, _ = teacher_qry_output
-        teacher_pos_rep, teacher_pos_hidden_states, teacher_pos_image_features, _, _ = teacher_pos_output
+        # pooled_output, hidden_states.hidden_states, image_features, attention_matrix
+        _, student_qry_hidden_states, _, _, _ = student_qry_output
+        _, student_pos_hidden_states, _, _, _ = student_pos_output
+        _, teacher_qry_hidden_states, _, _, teacher_qry_attention = teacher_qry_output
+        _, teacher_pos_hidden_states, _, _, teacher_pos_attention = teacher_pos_output
         
-        VISION_START_TOKEN_ID = 151652
-        VISION_END_TOKEN_ID = 151656
+        VISION_START_TOKEN_ID = 151644
+        VISION_END_TOKEN_ID = 151646
         BOS_TOKEN_ID = 151643
         
         device = input_data['student_inputs']['qry']['input_ids'].device
@@ -444,45 +439,38 @@ class EMO(nn.Module):
 
         # Lấy k layer cuối cùng của student
         student_last_k_qry = student_qry_attention[-k_layer:]
-        student_last_k_pos = student_pos_attention[-k_layer:]
         
         teacher_qry_mapped = []
-        teacher_pos_mapped = []
         for i in range(student_layer_num - k_layer, student_layer_num):
             teacher_qry_mapped.append(teacher_qry_attention[i * layer_per_block + layer_per_block - 1])
-            teacher_pos_mapped.append(teacher_pos_attention[i * layer_per_block + layer_per_block - 1])
         
         student_idx = self.extract_student_indices(input_data, topk_results)
         
         for i in range(batch_size):
             qry_topk_idx = [idx for idx, _, _ in topk_results[i]['qry_topk']]
-            pos_topk_idx = [idx for idx, _, _ in topk_results[i]['pos_topk']]
             
-            if len(qry_topk_idx) == 0 or len(pos_topk_idx) == 0:
+            if len(qry_topk_idx) == 0:
                 print("Warning: No valid top-k tokens found for instance {}, skipping attention loss computation.".format(i))
                 continue
-            
+
             s_qry_topk_idx = [idx for idx in student_idx[i]['qry'] if idx < student_last_k_qry[0].size(2)]
-            s_pos_topk_idx = [idx for idx in student_idx[i]['pos'] if idx < student_last_k_pos[0].size(2)]
             
             # Tính attention loss cho k layer cuối
-            for teacher_qry_att, teacher_pos_att, student_qry_att, student_pos_att in zip(
-                teacher_qry_mapped, teacher_pos_mapped, student_last_k_qry, student_last_k_pos
+            for teacher_qry_att, student_qry_att in zip(
+                teacher_qry_mapped, student_last_k_qry
             ):
+                print(len(qry_topk_idx), len(s_qry_topk_idx))
                 tq_mean = teacher_qry_att[i, :, qry_topk_idx, :].mean(dim=0)
-                tp_mean = teacher_pos_att[i, :, pos_topk_idx, :].mean(dim=0)
                 sq_mean = student_qry_att[i, :, s_qry_topk_idx, :].mean(dim=0)
-                sp_mean = student_pos_att[i, :, s_pos_topk_idx, :].mean(dim=0)
                 
                 # Mask -inf values
                 tq_mean = torch.where(tq_mean <= -1e2, torch.zeros_like(tq_mean), tq_mean)
                 sq_mean = torch.where(sq_mean <= -1e2, torch.zeros_like(sq_mean), sq_mean)
-                tp_mean = torch.where(tp_mean <= -1e2, torch.zeros_like(tp_mean), tp_mean)
-                sp_mean = torch.where(sp_mean <= -1e2, torch.zeros_like(sp_mean), sp_mean)
 
                 # Tính CKA loss cho layer hiện tại
-                att_loss = cka_fn_loss(tq_mean, sq_mean) + cka_fn_loss(tp_mean, sp_mean)
-                att_loss_total += att_loss / 2
+                num_aligned_toks = min(tq_mean.size(0), sq_mean.size(0))
+                att_loss = cka_fn_loss(tq_mean[:num_aligned_toks], sq_mean[:num_aligned_toks])
+                att_loss_total += att_loss
         
         # Average over batch_size và k_layer
         return att_loss_total / (batch_size)
