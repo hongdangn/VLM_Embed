@@ -476,9 +476,14 @@ class MMEBModel(nn.Module):
             projector_path = os.path.join(model_name_or_path, "mm_projector.pth")
 
             if os.path.exists(projector_path):
-                lora_model.base_model.model.model.mm_projector.load_state_dict(
-                    torch.load(projector_path, map_location='cpu')
-                )
+                if model_args.model_backbone in ["llava_onevision", "llava_next"]:
+                    lora_model.base_model.model.multi_modal_projector.load_state_dict(
+                        torch.load(projector_path)
+                    )
+                else:
+                    lora_model.base_model.model.model.mm_projector.load_state_dict(
+                        torch.load(projector_path)
+                    )
                 print("Successfully loading the projector's weight")
                 
             # lora_model = lora_model.merge_and_unload()
