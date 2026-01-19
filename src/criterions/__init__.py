@@ -8,6 +8,9 @@ from .ours import ProposalLossWithDTW
 from .ckd import CKD
 from .emo import EMO
 from .norm_kd import NormKD
+from .span_propose_wo_hid_cross import SpanProposeCriterionWeightedWOHidCross
+from .span_propose_wo_hid_intra import SpanProposeCriterionWeightedWOHidIntra
+from .span_propose_wo_intra_cross import SpanProposeCriterionWeightedWOIntraCross
 
 criterion_list = {
     "rkd": ContrastiveLossWithRKD,
@@ -18,7 +21,10 @@ criterion_list = {
     "dang_propose": StrongerKD,
     "ckd": CKD,
     "emo": EMO,
-    "norm": NormKD
+    "norm": NormKD,
+    "span_propose_wo_hid_cross": SpanProposeCriterionWeightedWOHidCross,
+    "span_propose_wo_hid_intra": SpanProposeCriterionWeightedWOHidIntra,
+    "span_propose_wo_intra_cross": SpanProposeCriterionWeightedWOIntraCross,
 }
 
 def build_criterion(args):

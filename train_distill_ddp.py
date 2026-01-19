@@ -84,8 +84,8 @@ def ddp_setup():
 class Trainer:
     def __init__(self, distiller, train_data, optimizer, lr_scheduler, criterion, model_args, training_args):
         print_rank("Initializing Trainer...")
-        self.gpu_id = int(os.environ['LOCAL_RANK'])
-        # self.gpu_id = int(training_args.gpu_id)
+        # self.gpu_id = int(os.environ['LOCAL_RANK'])
+        self.gpu_id = int(training_args.gpu_id)
         # self.gpu_id = 0
         self.device = torch.device(f'cuda:{self.gpu_id}')
         self.distiller = distiller.to(self.device)
@@ -134,8 +134,7 @@ class Trainer:
                             disable=not dist.get_rank() == 0)
         for batch_idx, batch in enumerate(self.train_data):
             batch = to_device(batch, self.device)
-            with torch.autocast(enabled=True, dtype=torch.bfloat16, device_type='cuda'):
-                loss_dict = self.distiller(self.criterion, batch)
+            loss_dict = self.distiller(self.criterion, batch)
             
             if batch_idx == 0:
                 losses = {loss_type: [] for loss_type in loss_dict}
@@ -144,7 +143,7 @@ class Trainer:
                 batch_loss = loss_dict.get(loss_type, torch.tensor(0.0))
                 losses[loss_type].append(batch_loss.detach().item())
 
-            total_loss = loss_dict['total_loss'] / self.training_args.gradient_accumulation_steps
+            total_loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
             total_loss.backward()
             
             if (batch_idx + 1) % self.training_args.gradient_accumulation_steps == 0:

@@ -110,7 +110,21 @@ class TrainingArguments(TrainingArguments):
     img_align_loss_weight: float = field(default=0.0, metadata={"help": "weight of image-text alignment loss"})
     cross_modal_kd_weight: float = field(default=0.001, metadata={"help": "weight of cross modal kd loss"})
     ot_loss_weight: float = field(default=0.03, metadata={"help": "weight of optimal transport loss"})
-    
+    percent_data: float = field(default=1.0, metadata={"help": "percentage of data used for distillation training"})
+
+    teacher_layer_mapping: List[int] = field(
+        default_factory=list,
+        metadata={"help": "List of teacher layers used for distillation; number of elements equals number of projectors"}
+    )
+    student_layer_mapping: List[int] = field(
+        default_factory=list,
+        metadata={"help": "List of student layers used for distillation; number of elements equals number of projectors"}
+    )
+    split_layer_mapping: List[int] = field(
+        default_factory=list,
+        metadata={"help": "List of split layers for student; number of elements equals number of projectors"}   
+    )
+    w_cross_modal_loss: float = field(default=1.0, metadata={"help": "weight for cross modal loss"})
 @dataclass
 class MTEBArguments:
     device: str = field(default="cuda", metadata={"help": "use cuda for single GPU inference, if multiple GPUs are available it will use DP automatically"})

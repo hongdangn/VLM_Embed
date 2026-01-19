@@ -95,7 +95,7 @@ VLM_VIDEO_TOKENS = {
     GME: "<|video_pad|>",
     LamRA: "<|video_pad|>",
     INTERNVIDEO2: "",
-    LLAVA_QWEN2: ""
+    LLAVA_QWEN2: "llava_qwen2"
 }
 
 backbone2model = {
