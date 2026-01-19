@@ -6,7 +6,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
     --teacher_model_name "raghavlite/B3_Qwen2_2B" \
     --lora True \
     --lora_r 64 \
-    --gpu_id 3 \
+    --gpu_id 0 \
     --teacher_lora True \
     --teacher_lora_r 8 \
     --teacher_pooling "eos" \
@@ -32,6 +32,6 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
     --lr_scheduler_type "cosine" \
     --warmup_ratio 0.03 \
     --image_resolution low \
-    --kd_loss_type "vqa" \
+    --kd_loss_type "emo" \
     --projector_config_path "./config/projector_config.json" \
     --projector_lr 5e-4

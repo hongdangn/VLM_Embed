@@ -6,7 +6,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
     --teacher_model_name "raghavlite/B3_Qwen2_2B" \
     --lora True \
     --lora_r 64 \
-    --gpu_id 2 \
+    --gpu_id 0 \
     --teacher_lora True \
     --teacher_lora_r 8 \
     --teacher_pooling "eos" \
@@ -18,7 +18,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
     --model_backbone "llava_onevision" \
     --image_dir "./vlm2vec_train/MMEB-train/" \
     --output_dir "training/emo_meta_llavaov_cls" \
-    --per_device_train_batch_size 1 \
+    --per_device_train_batch_size 8 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \
     --num_train_epochs 1 \

@@ -1,8 +1,8 @@
 NUM_GPUS_PER_NODE=1
 TRAIN_SCRIPT="train_distill_ddp.py"
 
-torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30001 $TRAIN_SCRIPT \
-    --model_name "apple/FastVLM-0.5B" \
+torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
+    --model_name "llava-hf/llava-onevision-qwen2-0.5b-ov-hf" \
     --teacher_model_name "raghavlite/B3_Qwen2_2B" \
     --lora True \
     --lora_r 64 \
@@ -15,9 +15,9 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30001 $TRAIN_SCRIPT \
     --dataset_name "TIGER-Lab/MMEB-train" \
     --subset_name "ImageNet_1K" "N24News" "HatefulMemes" "VOC2007" "SUN397" \
     --dataset_split "original" \
-    --model_backbone "llava_qwen2" \
+    --model_backbone "llava_onevision" \
     --image_dir "./vlm2vec_train/MMEB-train/" \
-    --output_dir "training/emo_meta_cls" \
+    --output_dir "training/emo_meta_llavaov_cls" \
     --per_device_train_batch_size 2 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \
