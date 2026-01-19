@@ -66,7 +66,6 @@ class EMO(nn.Module):
             teacher_model.eval()
             teacher_qry_output = teacher_model.encode_input(teacher_qry_input)
             teacher_pos_output = teacher_model.encode_input(teacher_pos_input)
-            print(len(teacher_qry_output))
             _, _, _, _, teacher_qry_attention = teacher_qry_output
             _, _, _, _, teacher_pos_attention = teacher_pos_output
 
@@ -459,7 +458,6 @@ class EMO(nn.Module):
             for teacher_qry_att, student_qry_att in zip(
                 teacher_qry_mapped, student_last_k_qry
             ):
-                print(len(qry_topk_idx), len(s_qry_topk_idx))
                 tq_mean = teacher_qry_att[i, :, qry_topk_idx, :].mean(dim=0)
                 sq_mean = student_qry_att[i, :, s_qry_topk_idx, :].mean(dim=0)
                 
