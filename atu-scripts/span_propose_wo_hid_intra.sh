@@ -18,7 +18,7 @@ torchrun --standalone \
     --lora True \
     --teacher_lora True \
     --lora_r 64 \
-    --gpu_id 2 \
+    --gpu_id 1 \
     --lora_alpha 64 \
     --teacher_lora_r 8 \
     --teacher_pooling "eos" \
@@ -30,7 +30,7 @@ torchrun --standalone \
     --dataset_split "original" \
     --image_dir "/mnt/disk1/aiotlab/dangnh/VLM_Embed/vlm2vec_train/MMEB-train" \
     --percent_data 1.0 \
-    --output_dir "training/ablation_wo_hid_cross" \
+    --output_dir "training/ablation_wo_hid_intra" \
     --per_device_train_batch_size 8 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \

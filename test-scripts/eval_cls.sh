@@ -1,8 +1,8 @@
-MODEL_NAME=/mnt/disk1/aiotlab/dangnh/VLM_Embed/meta_train/norm_meta_llavaov_cls/checkpoint-epoch-0
+MODEL_NAME=/mnt/disk1/aiotlab/dangnh/VLM_Embed/training/ablation_wo_hid_cross/checkpoint-epoch-0
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
 IMAGE_DIR="./eval-data"
-BATCH_SIZE=1
+BATCH_SIZE=36
 
 datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007) 
 

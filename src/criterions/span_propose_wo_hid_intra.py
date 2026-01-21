@@ -1451,10 +1451,7 @@ class SpanProposeCriterionWeightedWOHidIntra(nn.Module):
         return {
             'loss': total_loss,
             'contrastive_loss': contrastive_loss,
-            'text_span_loss': text_span_loss,
-            'vision_cluster_loss': vision_cluster_loss,
             'cross_modal_loss': cross_modal_loss,
-            'span_loss': span_loss,
             'kd_loss_rkd': rkd_loss,
         }
         
