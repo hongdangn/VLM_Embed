@@ -1,13 +1,10 @@
-#!/bin/bash
 
-# Số lượng GPU trên mỗi node (máy)
 NUM_GPUS_PER_NODE=1
 
-# Đường dẫn tới file script training của bạn
 TRAIN_SCRIPT="train_distill_ddp.py"
 
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
-export TOKENIZERS_PARALLELISM=false
+
 # =========================================================================
 # Dùng torchrun để khởi chạy
 # =========================================================================
@@ -15,7 +12,7 @@ torchrun --standalone \
     --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
     --model_name apple/FastVLM-0.5B \
     --teacher_model_name "raghavlite/B3_Qwen2_2B" \
-    --gpu_id 2 \
+    --gpu_id 1 \
     --lora True \
     --teacher_lora True \
     --lora_r 64 \
@@ -28,9 +25,9 @@ torchrun --standalone \
     --dataset_name "TIGER-Lab/MMEB-train" \
     --subset_name "ImageNet_1K" "N24News" "HatefulMemes" "VOC2007" "SUN397" \
     --dataset_split "original" \
-    --percent_data 1.0 \
-    --output_dir "training/ablation_wo_hid_cross" \
-    --per_device_train_batch_size 8 \
+    --image_dir "/mnt/disk1/aiotlab/dangnh/VLM_Embed/vlm2vec_train/MMEB-train" \
+    --output_dir "training/ablation_wo_intra" \
+    --per_device_train_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \
     --num_train_epochs 1 \
@@ -46,7 +43,7 @@ torchrun --standalone \
     --warmup_ratio 0.03 \
     --kd_weight 2.5 \
     --w_cross_modal_loss 2.5 \
-    --kd_loss_type "span_propose_wo_hid_cross" \
+    --kd_loss_type "span_propose_wo_intra" \
     --image_resolution "low" \
     --teacher_layer_mapping 0 22 25 28 \
     --student_layer_mapping 0 18 21 24 \

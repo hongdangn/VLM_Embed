@@ -11,6 +11,7 @@ from .norm_kd import NormKD
 from .span_propose_wo_hid_cross import SpanProposeCriterionWeightedWOHidCross
 from .span_propose_wo_hid_intra import SpanProposeCriterionWeightedWOHidIntra
 from .span_propose_wo_intra_cross import SpanProposeCriterionWeightedWOIntraCross
+from .span_propose_wo_intra import SpanProposeCriterionWeightedWOIntra
 
 criterion_list = {
     "rkd": ContrastiveLossWithRKD,
@@ -25,6 +26,7 @@ criterion_list = {
     "span_propose_wo_hid_cross": SpanProposeCriterionWeightedWOHidCross,
     "span_propose_wo_hid_intra": SpanProposeCriterionWeightedWOHidIntra,
     "span_propose_wo_intra_cross": SpanProposeCriterionWeightedWOIntraCross,
+    "span_propose_wo_intra": SpanProposeCriterionWeightedWOIntra
 }
 
 def build_criterion(args):
