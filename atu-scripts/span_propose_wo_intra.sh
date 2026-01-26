@@ -1,5 +1,5 @@
 
-NUM_GPUS_PER_NODE=1
+NUM_GPUS_PER_NODE=4
 
 TRAIN_SCRIPT="train_distill_ddp.py"
 
@@ -25,7 +25,6 @@ torchrun --standalone \
     --dataset_name "TIGER-Lab/MMEB-train" \
     --subset_name "ImageNet_1K" "N24News" "HatefulMemes" "VOC2007" "SUN397" \
     --dataset_split "original" \
-    --image_dir "/mnt/disk1/aiotlab/dangnh/VLM_Embed/vlm2vec_train/MMEB-train" \
     --output_dir "training/ablation_wo_intra" \
     --per_device_train_batch_size 4 \
     --gradient_accumulation_steps 1 \
