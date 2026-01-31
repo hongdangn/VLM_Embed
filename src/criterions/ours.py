@@ -128,8 +128,8 @@ class ProposalLossWithDTW(nn.Module):
         }
 
     def extract_top_k_text_token(self, input_data, teacher_qry_attention, teacher_pos_attention, threshold=0.8):
-        VISION_START_TOKEN_ID = 151644
-        VISION_END_TOKEN_ID = 151645
+        VISION_START_TOKEN_ID = 151652
+        VISION_END_TOKEN_ID = 151656
         BOS_TOKEN_ID = 151643
         
         teacher_qry_input_ids = input_data['teacher_inputs']['qry']['input_ids']

@@ -230,7 +230,7 @@ class EMO(nn.Module):
         _, teacher_pos_hidden_states, _, _, teacher_pos_attention = teacher_pos_output
         
         VISION_START_TOKEN_ID = 151644
-        VISION_END_TOKEN_ID = 151645
+        VISION_END_TOKEN_ID = 151646
         BOS_TOKEN_ID = 151643
         
         device = input_data['student_inputs']['qry']['input_ids'].device
