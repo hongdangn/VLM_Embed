@@ -48,8 +48,7 @@ class ProposalLossWithDTW(nn.Module):
         
         teacher_qry_input = input_data['teacher_inputs']['qry']
         teacher_pos_input = input_data['teacher_inputs']['pos']
-        num_text_qry_tokens = ((teacher_qry_input['input_ids'] < 151652) | (teacher_qry_input['input_ids'] > 151656)).sum(dim=1)
-        num_text_pos_tokens = ((teacher_pos_input['input_ids'] < 151652) | (teacher_pos_input['input_ids'] > 151656)).sum(dim=1)
+
         batch_size = student_qry_input['input_ids'].size(0)
         with torch.no_grad():
             teacher_model.eval()
@@ -116,11 +115,9 @@ class ProposalLossWithDTW(nn.Module):
         self.kd_loss_dtw = 0.5 * self.kd_loss_dtw_image
 
         # OT loss
-        # topk_token_text_results = self.extract_top_k_text_token(input_data, teacher_qry_attention, teacher_pos_attention, num_text_qry_tokens, num_text_pos_tokens)
         topk_token_text_results = self.extract_top_k_text_token(input_data, teacher_qry_attention, teacher_pos_attention)
         self.ot_loss = self.compute_ot_loss(student_qry_output, student_pos_output, teacher_qry_output, teacher_pos_output, distiller, input_data, topk_token_text_results)
         total_loss = contrastive_loss + self.kd_loss_weight * (self.kd_loss_rkd + self.kd_loss_mse_seq + 0.5 * self.kd_loss_dtw_image + 0.5 * self.ot_loss)
-        # total_loss = contrastive_loss + self.kd_loss_weight *(0.1 * self.attn_loss)
         return {
             "loss": total_loss, 
             "contrastive_loss": contrastive_loss,
@@ -131,8 +128,8 @@ class ProposalLossWithDTW(nn.Module):
         }
 
     def extract_top_k_text_token(self, input_data, teacher_qry_attention, teacher_pos_attention, threshold=0.8):
-        VISION_START_TOKEN_ID = 151652
-        VISION_END_TOKEN_ID = 151656
+        VISION_START_TOKEN_ID = 151644
+        VISION_END_TOKEN_ID = 151645
         BOS_TOKEN_ID = 151643
         
         teacher_qry_input_ids = input_data['teacher_inputs']['qry']['input_ids']
@@ -271,10 +268,10 @@ class ProposalLossWithDTW(nn.Module):
     
     # Compute OT loss
     def compute_ot_loss(self, student_qry_output, student_pos_output, teacher_qry_output, teacher_pos_output, distiller, input_data, topk_results):
-        student_qry_rep, student_qry_hidden_states, student_qry_image_features, _, student_qry_attention = student_qry_output
-        student_pos_rep, student_pos_hidden_states, student_pos_image_features, _, student_pos_attention = student_pos_output
-        teacher_qry_rep, teacher_qry_hidden_states, teacher_qry_image_features, _, teacher_qry_attention = teacher_qry_output
-        teacher_pos_rep, teacher_pos_hidden_states, teacher_pos_image_features, _, teacher_pos_attention = teacher_pos_output
+        _, student_qry_hidden_states, student_qry_image_features, _, student_qry_attention = student_qry_output
+        _, student_pos_hidden_states, student_pos_image_features, _, student_pos_attention = student_pos_output
+        _, teacher_qry_hidden_states, teacher_qry_image_features, _, teacher_qry_attention = teacher_qry_output
+        _, teacher_pos_hidden_states, teacher_pos_image_features, _, teacher_pos_attention = teacher_pos_output
 
         device = input_data['student_inputs']['qry']['input_ids'].device
         batch_size = len(topk_results)

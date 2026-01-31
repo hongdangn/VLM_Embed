@@ -1,8 +1,8 @@
-MODEL_NAME=/mnt/disk1/aiotlab/dangnh/VLM_Embed/training/ablation_wo_hid_cross/checkpoint-epoch-0
+MODEL_NAME=/mnt/disk1/aiotlab/dangnh/VLM_Embed/meta_train/ablation_wo_intra/checkpoint-epoch-0
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
 IMAGE_DIR="./eval-data"
-BATCH_SIZE=36
+BATCH_SIZE=32
 
 datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007) 
 
@@ -21,12 +21,12 @@ for SUBSET_NAME in "${datasets[@]}"; do
         --normalize True \
         --lora True \
         --lora_r 64 \
-        --gpu_id 0 \
+        --gpu_id 2 \
         --bf16 \
         --dataset_name "$DATASET_NAME" \
         --subset_name "$SUBSET_NAME" \
         --dataset_split test \
-        --image_resolution low \
+        --image_resolution mid \
         --per_device_eval_batch_size "$BATCH_SIZE" \
         --image_dir "$IMAGE_DIR" \
         --tgt_prefix_mod
