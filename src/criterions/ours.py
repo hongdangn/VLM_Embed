@@ -121,7 +121,7 @@ class ProposalLossWithDTW(nn.Module):
         
         del input_data
         del teacher_pos_output, teacher_pos_attention, teacher_pos_input, teacher_qry_image_features, teacher_qry_output
-        del student_pos_image_features, student_qry_output, student_qry_output, student_qry_reps, student_pos_output, student_qry_reps
+        del student_pos_image_features, student_qry_output, student_pos_output, student_qry_reps
 
         return {
             "loss": total_loss, 
