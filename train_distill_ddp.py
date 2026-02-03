@@ -138,20 +138,20 @@ class Trainer:
                 loss_dict = self.distiller(self.criterion, batch)
                 del batch
                 torch.cuda.empty_cache()
+            
+                if batch_idx == 0:
+                    losses = {loss_type: [] for loss_type in loss_dict}
+                
+                for loss_type in losses:
+                    batch_loss = loss_dict.get(loss_type, torch.tensor(0.0))
+                    losses[loss_type].append(batch_loss.detach().item())
+
+                total_loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
+                total_loss.backward()
             except RuntimeError as e:
                 print(e)
                 torch.cuda.empty_cache()
                 continue
-            
-            if batch_idx == 0:
-                losses = {loss_type: [] for loss_type in loss_dict}
-            
-            for loss_type in losses:
-                batch_loss = loss_dict.get(loss_type, torch.tensor(0.0))
-                losses[loss_type].append(batch_loss.detach().item())
-
-            total_loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
-            total_loss.backward()
             
             if (batch_idx + 1) % self.training_args.gradient_accumulation_steps == 0:
                 self.optimizer.step()

@@ -99,17 +99,17 @@ class ProposalLossWithDTW(nn.Module):
                         self.kd_loss_dtw_image = self.kd_loss_dtw_image + self.dtw_criterion(s, t).mean()
                         self.kd_loss_dtw_image = self.kd_loss_dtw_image.to(torch.bfloat16)
                         cur_idx_qry_img += 1
-            if student_pos_image_features is not None and teacher_pos_image_features is not None:
-                if cur_idx_pos_img < len(student_pos_image_features) and cur_idx_pos_img < len(teacher_pos_image_features):
-                    if student_pos_image_features[cur_idx_pos_img] is not None and teacher_pos_image_features[cur_idx_pos_img] is not None:
-                        s_pos_image_features = F.normalize(student_pos_image_features[cur_idx_pos_img], p=2, dim=-1)
-                        t_pos_image_features = F.normalize(teacher_pos_image_features[cur_idx_pos_img], p=2, dim=-1)
-                        projected_t_pos_image_features = self.distiller.projectors["t2s_img"](t_pos_image_features)
-                        s = s_pos_image_features.unsqueeze(0).to(torch.float32)
-                        t = projected_t_pos_image_features.unsqueeze(0).to(torch.float32)
-                        self.kd_loss_dtw_image = self.kd_loss_dtw_image + self.dtw_criterion(s, t).mean()
-                        self.kd_loss_dtw_image = self.kd_loss_dtw_image.to(torch.bfloat16)
-                        cur_idx_pos_img += 1
+            # if student_pos_image_features is not None and teacher_pos_image_features is not None:
+            #     if cur_idx_pos_img < len(student_pos_image_features) and cur_idx_pos_img < len(teacher_pos_image_features):
+            #         if student_pos_image_features[cur_idx_pos_img] is not None and teacher_pos_image_features[cur_idx_pos_img] is not None:
+            #             s_pos_image_features = F.normalize(student_pos_image_features[cur_idx_pos_img], p=2, dim=-1)
+            #             t_pos_image_features = F.normalize(teacher_pos_image_features[cur_idx_pos_img], p=2, dim=-1)
+            #             projected_t_pos_image_features = self.distiller.projectors["t2s_img"](t_pos_image_features)
+            #             s = s_pos_image_features.unsqueeze(0).to(torch.float32)
+            #             t = projected_t_pos_image_features.unsqueeze(0).to(torch.float32)
+            #             self.kd_loss_dtw_image = self.kd_loss_dtw_image + self.dtw_criterion(s, t).mean()
+            #             self.kd_loss_dtw_image = self.kd_loss_dtw_image.to(torch.bfloat16)
+            #             cur_idx_pos_img += 1
         self.kd_loss_dtw_image = self.kd_loss_dtw_image / batch_size
 
         self.kd_loss_dtw = 0.5 * self.kd_loss_dtw_image
@@ -138,40 +138,29 @@ class ProposalLossWithDTW(nn.Module):
         BOS_TOKEN_ID = 151643
         
         teacher_qry_input_ids = input_data['teacher_inputs']['qry']['input_ids']
-        teacher_pos_input_ids = input_data['teacher_inputs']['pos']['input_ids']
         batch_size, qry_len = teacher_qry_input_ids.size()
-        _, pos_len = teacher_pos_input_ids.size()
         
         qry_atten = teacher_qry_attention[-1].mean(dim=1)
-        pos_atten = teacher_pos_attention[-1].mean(dim=1)
         
         qry_importance = qry_atten[:, -1, :]
-        pos_importance = pos_atten[:, -1, :]
         
         results = []
         for i in range(batch_size):
             qry_ids = teacher_qry_input_ids[i]
-            pos_ids = teacher_pos_input_ids[i]
             
             qry_imp = qry_importance[i]
-            pos_imp = pos_importance[i]
             
             # Mask để chỉ lấy text tokens (loại bỏ vision tokens và BOS)
             qry_mask = ((qry_ids < VISION_START_TOKEN_ID) | (qry_ids > VISION_END_TOKEN_ID)) & (qry_ids != BOS_TOKEN_ID)
-            pos_mask = ((pos_ids < VISION_START_TOKEN_ID) | (pos_ids > VISION_END_TOKEN_ID)) & (pos_ids != BOS_TOKEN_ID)
             
             # Áp dụng mask
             qry_imp_masked = qry_imp * qry_mask.float()
-            pos_imp_masked = pos_imp * pos_mask.float()
             
             # Loại bỏ token cuối cùng khỏi việc tính toán (vì sẽ luôn được thêm vào)
             qry_imp_without_last = qry_imp_masked.clone()
-            pos_imp_without_last = pos_imp_masked.clone()
             qry_imp_without_last[-1] = 0
-            pos_imp_without_last[-1] = 0
             
             qry_total = qry_imp_without_last.sum()
-            pos_total = pos_imp_without_last.sum()
             
             # Sort và chọn tokens cho query
             qry_sorted_imp, qry_sorted_idx = torch.sort(qry_imp_without_last, descending=True)
@@ -181,40 +170,40 @@ class ProposalLossWithDTW(nn.Module):
             qry_selected_idx = qry_sorted_idx[:qry_num_tokens]
             
             # Sort và chọn tokens cho positive
-            pos_sorted_imp, pos_sorted_idx = torch.sort(pos_imp_without_last, descending=True)
-            pos_cumsum = torch.cumsum(pos_sorted_imp, dim=0)
-            pos_target = pos_total * threshold
-            pos_num_tokens = (pos_cumsum < pos_target).sum() + 1
-            pos_selected_idx = pos_sorted_idx[:pos_num_tokens]
+            # pos_sorted_imp, pos_sorted_idx = torch.sort(pos_imp_without_last, descending=True)
+            # pos_cumsum = torch.cumsum(pos_sorted_imp, dim=0)
+            # pos_target = pos_total * threshold
+            # pos_num_tokens = (pos_cumsum < pos_target).sum() + 1
+            # pos_selected_idx = pos_sorted_idx[:pos_num_tokens]
             
             
             qry_valid_idx = qry_selected_idx[qry_mask[qry_selected_idx]]
-            pos_valid_idx = pos_selected_idx[pos_mask[pos_selected_idx]]
+            # pos_valid_idx = pos_selected_idx[pos_mask[pos_selected_idx]]
             
             # Thêm token cuối vào kết quả
             qry_final_idx = torch.cat([qry_valid_idx, torch.tensor([qry_len - 1], device=qry_valid_idx.device)])
-            pos_final_idx = torch.cat([pos_valid_idx, torch.tensor([pos_len - 1], device=pos_valid_idx.device)])
+            # pos_final_idx = torch.cat([pos_valid_idx, torch.tensor([pos_len - 1], device=pos_valid_idx.device)])
             
             qry_selected_imp = qry_imp_masked[qry_final_idx]
-            pos_selected_imp = pos_imp_masked[pos_final_idx]
+            # pos_selected_imp = pos_imp_masked[pos_final_idx]
             
             qry_imp_sum = qry_selected_imp.sum()
             pos_imp_sum = pos_selected_imp.sum()
             
             # Normalize importance
             qry_imp_normalized = qry_selected_imp / qry_imp_sum if qry_imp_sum > 0 else qry_selected_imp
-            pos_imp_normalized = pos_selected_imp / pos_imp_sum if pos_imp_sum > 0 else pos_selected_imp
+            # pos_imp_normalized = pos_selected_imp / pos_imp_sum if pos_imp_sum > 0 else pos_selected_imp
             
             
             # Tạo kết quả với mask để loại bỏ các token không hợp lệ
             qry_topk = [(int(idx), int(qry_ids[idx]), float(imp)) 
                         for idx, imp in zip(qry_final_idx, qry_imp_normalized)]
-            pos_topk = [(int(idx), int(pos_ids[idx]), float(imp)) 
-                        for idx, imp in zip(pos_final_idx, pos_imp_normalized)]
+            # pos_topk = [(int(idx), int(pos_ids[idx]), float(imp)) 
+            #             for idx, imp in zip(pos_final_idx, pos_imp_normalized)]
             
             results.append({
                 "qry_topk": qry_topk,
-                "pos_topk": pos_topk,
+                # "pos_topk": pos_topk,
             })
         
         return results
@@ -286,17 +275,17 @@ class ProposalLossWithDTW(nn.Module):
         
         for i in range(batch_size):
             qry_topk_idx = [idx for idx, _, _ in topk_results[i]['qry_topk']]
-            pos_topk_idx = [idx for idx, _, _ in topk_results[i]['pos_topk']]
+            # pos_topk_idx = [idx for idx, _, _ in topk_results[i]['pos_topk']]
             
             qry_topk_importance = [imp for _, _, imp in topk_results[i]['qry_topk']]
-            pos_topk_importance = [imp for _, _, imp in topk_results[i]['pos_topk']]
+            # pos_topk_importance = [imp for _, _, imp in topk_results[i]['pos_topk']]
 
-            if len(qry_topk_idx) == 0 or len(pos_topk_idx) == 0:
-                print("Warning: No top-k tokens found for OT loss computation for instance ", i)
-                continue
+            # if len(qry_topk_idx) == 0 or len(pos_topk_idx) == 0:
+            #     print("Warning: No top-k tokens found for OT loss computation for instance ", i)
+            #     continue
             
             s_qry_topk_idx = [idx for idx in student_idx[i]['qry'] if idx < student_qry_hidden_states[-1][i].size(0)]
-            s_pos_topk_idx = [idx for idx in student_idx[i]['pos'] if idx < student_pos_hidden_states[-1][i].size(0)]
+            # s_pos_topk_idx = [idx for idx in student_idx[i]['pos'] if idx < student_pos_hidden_states[-1][i].size(0)]
 
 
             # teacher_qry_attention_matrix = teacher_qry_attention[-1][i]
@@ -306,52 +295,52 @@ class ProposalLossWithDTW(nn.Module):
             # teacher_pos_topk_attn = teacher_pos_attention_matrix[:, -1, pos_topk_idx]
 
             teacher_qry_topk_importance = torch.tensor(qry_topk_importance, device=device)
-            teacher_pos_topk_importance = torch.tensor(pos_topk_importance, device=device)
+            # teacher_pos_topk_importance = torch.tensor(pos_topk_importance, device=device)
             
             attn_mask_stu_qry = input_data['student_inputs']['qry']['attention_mask'][i]
             attn_mask_stu_pos = input_data['student_inputs']['pos']['attention_mask'][i]
             
             if attn_mask_stu_qry.dim() > 1:
                 attn_mask_stu_qry = attn_mask_stu_qry.view(-1)
-            if attn_mask_stu_pos.dim() > 1:
-                attn_mask_stu_pos = attn_mask_stu_pos.view(-1)
+            # if attn_mask_stu_pos.dim() > 1:
+            #     attn_mask_stu_pos = attn_mask_stu_pos.view(-1)
             num_student_qry_pad_token = int((attn_mask_stu_qry == 0).sum().item())
-            num_student_pos_pad_token = int((attn_mask_stu_pos == 0).sum().item())
+            # num_student_pos_pad_token = int((attn_mask_stu_pos == 0).sum().item())
             
             student_qry_attention_matrix = student_qry_attention[-1][i]
-            student_pos_attention_matrix = student_pos_attention[-1][i]
+            # student_pos_attention_matrix = student_pos_attention[-1][i]
             student_qry_topk_attn = student_qry_attention_matrix[:, -(num_student_qry_pad_token + 1), s_qry_topk_idx]
-            student_pos_topk_attn = student_pos_attention_matrix[:, -(num_student_pos_pad_token + 1), s_pos_topk_idx]
+            # student_pos_topk_attn = student_pos_attention_matrix[:, -(num_student_pos_pad_token + 1), s_pos_topk_idx]
 
             # student_qry_topk_importance = torch.softmax(student_qry_topk_attn.mean(dim=0), dim=0)
             # student_pos_topk_importance = torch.softmax(student_pos_topk_attn.mean(dim=0), dim=0)
             student_qry_topk_attn_mean = student_qry_topk_attn.mean(dim=0)
-            student_pos_topk_attn_mean = student_pos_topk_attn.mean(dim=0)
+            # student_pos_topk_attn_mean = student_pos_topk_attn.mean(dim=0)
             
             student_qry_topk_importance = student_qry_topk_attn_mean / student_qry_topk_attn_mean.sum() if student_qry_topk_attn_mean.sum() > 0 else student_qry_topk_attn_mean
-            student_pos_topk_importance = student_pos_topk_attn_mean / student_pos_topk_attn_mean.sum() if student_pos_topk_attn_mean.sum() > 0 else student_pos_topk_attn_mean
+            # student_pos_topk_importance = student_pos_topk_attn_mean / student_pos_topk_attn_mean.sum() if student_pos_topk_attn_mean.sum() > 0 else student_pos_topk_attn_mean
             
             teacher_qry_mass = teacher_qry_topk_importance.view(-1, 1)
-            teacher_pos_mass = teacher_pos_topk_importance.view(-1, 1)
+            # teacher_pos_mass = teacher_pos_topk_importance.view(-1, 1)
             student_qry_mass = student_qry_topk_importance.view(-1, 1)
-            student_pos_mass = student_pos_topk_importance.view(-1, 1)
+            # student_pos_mass = student_pos_topk_importance.view(-1, 1)
             
             student_qry_topk_hidden = student_qry_hidden_states[-1][i][s_qry_topk_idx, :]
-            student_pos_topk_hidden = student_pos_hidden_states[-1][i][s_pos_topk_idx, :]
+            # student_pos_topk_hidden = student_pos_hidden_states[-1][i][s_pos_topk_idx, :]
             projected_teacher_qry_topk_hidden = distiller.projectors["t2s"](teacher_qry_hidden_states[-1][i][qry_topk_idx, :])
-            projected_teacher_pos_topk_hidden = distiller.projectors["t2s"](teacher_pos_hidden_states[-1][i][pos_topk_idx, :])
+            # projected_teacher_pos_topk_hidden = distiller.projectors["t2s"](teacher_pos_hidden_states[-1][i][pos_topk_idx, :])
 
             if self.ot_dist_type == 'cosine':
                 cost_matrix_qry = self.pairwise_cosine_distance(student_qry_topk_hidden, projected_teacher_qry_topk_hidden)
-                cost_matrix_pos = self.pairwise_cosine_distance(student_pos_topk_hidden, projected_teacher_pos_topk_hidden)
+                # cost_matrix_pos = self.pairwise_cosine_distance(student_pos_topk_hidden, projected_teacher_pos_topk_hidden)
             elif self.ot_dist_type == 'euclidean':
                 cost_matrix_qry = self.pairwise_euclidean_distance(student_qry_topk_hidden, projected_teacher_qry_topk_hidden)
-                cost_matrix_pos = self.pairwise_euclidean_distance(student_pos_topk_hidden, projected_teacher_pos_topk_hidden)
+                # cost_matrix_pos = self.pairwise_euclidean_distance(student_pos_topk_hidden, projected_teacher_pos_topk_hidden)
             else:
                 raise ValueError(f"Unsupported OT distance type: {self.ot_dist_type}")
             ot_loss_qry, _ = self.sinkhorn(cost_matrix_qry, student_qry_mass, teacher_qry_mass, num_iters=self.OT_max_iter)
-            ot_loss_pos, _ = self.sinkhorn(cost_matrix_pos, student_pos_mass, teacher_pos_mass, num_iters=self.OT_max_iter)
-            total_ot_loss = total_ot_loss + 0.5 * (ot_loss_qry + ot_loss_pos)
+            # ot_loss_pos, _ = self.sinkhorn(cost_matrix_pos, student_pos_mass, teacher_pos_mass, num_iters=self.OT_max_iter)
+            total_ot_loss = total_ot_loss + 0.5 * (ot_loss_qry)
         
         if not hasattr(distiller, 'projectors') or "t2s" not in distiller.projectors:
             raise AttributeError("Projector 't2s' not found in distiller.projectors for OT loss computation.")
