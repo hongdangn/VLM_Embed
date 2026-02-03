@@ -18,7 +18,7 @@ torchrun --nproc_per_node=$NUM_GPUS_PER_NODE --master_port 30000 $TRAIN_SCRIPT \
     --model_backbone "llava_onevision" \
     --image_dir "./vlm2vec_train/MMEB-train/" \
     --output_dir "training/ours_meta_llavaov_cls" \
-    --per_device_train_batch_size 8 \
+    --per_device_train_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \
     --num_train_epochs 1 \

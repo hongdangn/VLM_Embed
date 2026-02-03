@@ -59,8 +59,8 @@ class ProposalLossWithDTW(nn.Module):
 
         student_qry_output = student_model.encode_input(student_qry_input)
         student_pos_output = student_model.encode_input(student_pos_input)
-        student_qry_reps, _, student_qry_image_features, _, student_qry_attention = student_qry_output
-        student_pos_reps, _, student_pos_image_features, _, student_pos_attention = student_pos_output
+        student_qry_reps, _, student_qry_image_features, _, _ = student_qry_output
+        student_pos_reps, _, student_pos_image_features, _, _ = student_pos_output
 
         if self.world_size > 1:
             all_student_qry_reps = self._dist_gather_tensor(student_qry_reps)
@@ -118,6 +118,11 @@ class ProposalLossWithDTW(nn.Module):
         topk_token_text_results = self.extract_top_k_text_token(input_data, teacher_qry_attention, teacher_pos_attention)
         self.ot_loss = self.compute_ot_loss(student_qry_output, student_pos_output, teacher_qry_output, teacher_pos_output, distiller, input_data, topk_token_text_results)
         total_loss = contrastive_loss + self.kd_loss_weight * (self.kd_loss_rkd + self.kd_loss_mse_seq + 0.5 * self.kd_loss_dtw_image + 0.5 * self.ot_loss)
+        
+        del input_data
+        del teacher_pos_output, teacher_pos_attention, teacher_pos_input, teacher_qry_image_features, teacher_qry_output
+        del student_pos_image_features, student_qry_output, student_qry_output, student_qry_reps, student_pos_output, student_qry_reps
+
         return {
             "loss": total_loss, 
             "contrastive_loss": contrastive_loss,

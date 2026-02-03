@@ -133,8 +133,15 @@ class Trainer:
                             desc=f"Epoch {epoch}",
                             disable=not dist.get_rank() == 0)
         for batch_idx, batch in enumerate(self.train_data):
-            batch = to_device(batch, self.device)
-            loss_dict = self.distiller(self.criterion, batch)
+            try:
+                batch = to_device(batch, self.device)
+                loss_dict = self.distiller(self.criterion, batch)
+                del batch
+                torch.cuda.empty_cache()
+            except RuntimeError as e:
+                print(e)
+                torch.cuda.empty_cache()
+                continue
             
             if batch_idx == 0:
                 losses = {loss_type: [] for loss_type in loss_dict}
