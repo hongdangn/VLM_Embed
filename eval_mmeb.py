@@ -93,6 +93,9 @@ def main():
     model.eval()
     device = f'cuda:{training_args.gpu_id}'
     print("CUDA>>>>", device)
+    x = []
+    for _, param in model.named_parameters():
+        x.append(param.device)
     model = model.to(device, dtype=torch.bfloat16)
 
     eval_collator = EvalCollator(
@@ -101,18 +104,8 @@ def main():
         processor=processor,
     )
 
-    # ToDo: This part of code is a little bit hacky. Need to refactor later.
     for idx, subset in enumerate(data_args.subset_name):
         score_path = os.path.join(data_args.encode_output_path, f"{subset}_score.json")
-        # if os.path.exists(score_path):
-        #     try:
-        #         with open(score_path, "r") as f:
-        #             score_dict = json.load(f)
-        #         print(f"Found previous eval score, skipping {subset}")
-        #         print(score_dict)
-        #         continue
-        #     except Exception as e:
-        #         pass
 
         print(f"\033[91m{idx+1}/{len(data_args.subset_name)}: Processing {subset} now!\033[0m")
         encode_qry_path = os.path.join(data_args.encode_output_path, f"{subset}_qry")
@@ -181,15 +174,6 @@ def main():
     for subset in tqdm(data_args.subset_name, desc="Iterate datasets to calculate scores"):
         print(f"\033[91m{subset}: Calculating score now!\033[0m")
         score_path = os.path.join(data_args.encode_output_path, f"{subset}_score.json")
-        # if os.path.exists(score_path):
-        #     try:
-        #         with open(score_path, "r") as f:
-        #             score_dict = json.load(f)
-        #         print(f"Found previous eval score, skipping {subset}")
-        #         print(score_dict)
-        #         continue
-        #     except Exception as e:
-        #         pass
 
         encode_qry_path = os.path.join(data_args.encode_output_path, f"{subset}_qry")
         encode_tgt_path = os.path.join(data_args.encode_output_path, f"{subset}_tgt")
@@ -209,17 +193,11 @@ def main():
 
         # for ColPali, pad only once for candidates
         if model_args.model_backbone == COLPALI:
-            #  in case of ColPali, query_tensor/tgt_tensor have not been flattened
             if len(qry_tensor) != len(qry_index):
                 qry_tensor = [t for l in qry_tensor for t in l.tolist()]
-                # qry_tensor = qry_tensor[:500]
-                # qry_index = qry_index[:500]
             if len(tgt_tensor) != len(tgt_index):
                 tgt_tensor = [t for l in tgt_tensor for t in l.tolist()]
-                # tgt_tensor = tgt_tensor[:500]
-                # tgt_index = tgt_index[:500]
 
-            # Initialize mappings
             tgtkey_to_rowid = {}
             rowid_to_tgtkey = {}
             for rowid, tt in enumerate(tgt_index):
@@ -227,13 +205,10 @@ def main():
                 tgtkey_to_rowid[key] = rowid
                 rowid_to_tgtkey[rowid] = key
 
-            # Convert each [n_token, dim] numpy array to tensor
             tgt_tensor = [torch.from_numpy(np.array(t)) for t in tgt_tensor]  # list of [n_token, dim] tensors
-            # Pad to max n_token (dim must be the same)
             tgt_tensor = pad_sequence(tgt_tensor, batch_first=True)  # shape: [num_candidates, max_n_token, dim]
             tgt_tensor = tgt_tensor.to(device)
 
-        # build a map for dedup
         qry_key2emb, tgt_key2emb = OrderedDict(), OrderedDict()
         for qry_t, tt in zip(qry_tensor, qry_index):
             text, img_path = tt["text"], tt["img_path"]
@@ -241,9 +216,7 @@ def main():
         for tgt_t, tt in zip(tgt_tensor, tgt_index):
             text, img_path = tt["text"], tt["img_path"]
             tgt_key2emb[(text, img_path)] = tgt_t
-        # print(f'tgt_tensor.shape = {tgt_tensor.shape}')
-        # print(f'len(tkey_to_rowid) = {len(tgtkey_to_rowid)}')
-        # print(f'len(rowid_to_tkey) = {len(rowid_to_tgtkey)}')
+
         print(f'len(tgt_key2emb) = {len(tgt_key2emb)}')
 
         n_correct = 0
@@ -264,16 +237,15 @@ def main():
                 all_pred.append(pred_tkey)
             else:
                 try:
-                    qry_t = qry_key2emb[(row["qry_text"], row["qry_img_path"])]  # (dim,)
+                    qry_t = qry_key2emb[(row["qry_text"], row["qry_img_path"])]
                     tgt_t, all_candidates = [], []
                 except:
                     import ipdb; ipdb.set_trace()
-                # with time_block("Target vector & candidate prep"):
                 for tt in zip(row["tgt_text"], row["tgt_img_path"]):
                     tgt_t.append(tgt_key2emb[tt])
                     all_candidates.append(tt)
                 qry_t = torch.from_numpy(np.array(qry_t))
-                tgt_t = np.stack(tgt_t, axis=0)  # (num_candidate, dim)
+                tgt_t = np.stack(tgt_t, axis=0)
                 scores, pred = get_pred(qry_t, tgt_t, normalization=model_args.normalize)
                 if pred == 0:
                     n_correct += 1

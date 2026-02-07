@@ -1,11 +1,12 @@
-MODEL_NAME=/mnt/disk1/aiotlab/dangnh/VLM_Embed/meta_train/ablation_wo_intra/checkpoint-epoch-0
+MODEL_NAME=/mnt/disk1/aiotlab/dangnh/VLM_Embed/meta_train/ours_meta_llavaov_cls/checkpoint-epoch-0
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
 IMAGE_DIR="./eval-data"
-BATCH_SIZE=32
+BATCH_SIZE=1
 
 datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007) 
 
+# export CUDA_VISIBLE_DEVICES=2
 echo "Starting comprehensive model evaluation for $MODEL_NAME"
 echo "Targeting ${#datasets[@]} MMEB subsets."
 
@@ -21,7 +22,7 @@ for SUBSET_NAME in "${datasets[@]}"; do
         --normalize True \
         --lora True \
         --lora_r 64 \
-        --gpu_id 2 \
+        --gpu_id 0 \
         --bf16 \
         --dataset_name "$DATASET_NAME" \
         --subset_name "$SUBSET_NAME" \
