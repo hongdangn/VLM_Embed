@@ -9,8 +9,6 @@ from tslearn.metrics import SoftDTWLossPyTorch
 
 logging.getLogger("numba").setLevel(logging.ERROR)
 
-import wandb
-
 class ProposalLossWithDTW(nn.Module):
     def __init__(self, args):
         super(ProposalLossWithDTW, self).__init__()
@@ -188,7 +186,6 @@ class ProposalLossWithDTW(nn.Module):
             # pos_selected_imp = pos_imp_masked[pos_final_idx]
             
             qry_imp_sum = qry_selected_imp.sum()
-            pos_imp_sum = pos_selected_imp.sum()
             
             # Normalize importance
             qry_imp_normalized = qry_selected_imp / qry_imp_sum if qry_imp_sum > 0 else qry_selected_imp
