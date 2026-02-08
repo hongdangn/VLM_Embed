@@ -228,7 +228,7 @@ class ProposalLossWithDTW(nn.Module):
                 s_pos_id_to_indices[token_id].append(j)
 
             qry_topk = topk_results[i]['qry_topk']
-            pos_topk = topk_results[i]['pos_topk']
+            # pos_topk = topk_results[i]['pos_topk']
             
             qry_student_idx = []
             used_qry_indices = set()
@@ -240,19 +240,19 @@ class ProposalLossWithDTW(nn.Module):
                             used_qry_indices.add(index)
                             break 
 
-            pos_student_idx = []
-            used_pos_indices = set()
-            for _, token_id, _ in pos_topk:
-                if token_id in s_pos_id_to_indices:
-                    for index in s_pos_id_to_indices[token_id]:
-                        if index not in used_pos_indices:
-                            pos_student_idx.append(index)
-                            used_pos_indices.add(index)
-                            break
+            # pos_student_idx = []
+            # used_pos_indices = set()
+            # for _, token_id, _ in pos_topk:
+            #     if token_id in s_pos_id_to_indices:
+            #         for index in s_pos_id_to_indices[token_id]:
+            #             if index not in used_pos_indices:
+            #                 pos_student_idx.append(index)
+            #                 used_pos_indices.add(index)
+            #                 break
                             
             student_indices.append({
                 "qry": qry_student_idx,
-                "pos": pos_student_idx
+                # "pos": pos_student_idx
             })
 
         return student_indices
@@ -295,7 +295,7 @@ class ProposalLossWithDTW(nn.Module):
             # teacher_pos_topk_importance = torch.tensor(pos_topk_importance, device=device)
             
             attn_mask_stu_qry = input_data['student_inputs']['qry']['attention_mask'][i]
-            attn_mask_stu_pos = input_data['student_inputs']['pos']['attention_mask'][i]
+            # attn_mask_stu_pos = input_data['student_inputs']['pos']['attention_mask'][i]
             
             if attn_mask_stu_qry.dim() > 1:
                 attn_mask_stu_qry = attn_mask_stu_qry.view(-1)
