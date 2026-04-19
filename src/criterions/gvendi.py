@@ -35,7 +35,7 @@ class VLMDistillConfig:
 
     lam_fusion:      float = 1.2
 
-    lam_cross_ot:    float = 0.5           
+    lam_cross_ot:    float = 0.5           # innovation 1
 
     num_grad_layers: int   = 1             
 
@@ -396,7 +396,6 @@ class VLMDistillGVendi(nn.Module):
             )
         return total, comps
 
-
 class GVendiVLMCriterion(nn.Module):
     def __init__(self, args, distiller):
         super().__init__()
@@ -433,19 +432,35 @@ class GVendiVLMCriterion(nn.Module):
             cfg,
         )
 
+        # Phase-2: load fixed topology learned in phase 1
+        self.teacher_cache_dir = getattr(args, "teacher_cache_dir", None)
+        self.phase1_ckpt = getattr(args, "gvendi_phase1_ckpt", None)
+
+        if self.phase1_ckpt is not None and os.path.isfile(self.phase1_ckpt):
+            ckpt = torch.load(self.phase1_ckpt, map_location="cpu", weights_only=True)
+            if "book_f" in ckpt:
+                self.gvendi.book_f.load_state_dict(ckpt["book_f"])
+            if "cross_book" in ckpt:
+                self.gvendi.cross_book.load_state_dict(ckpt["cross_book"])
+
+            # freeze codebooks in phase 2
+            for p in self.gvendi.book_f.parameters():
+                p.requires_grad_(False)
+            for p in self.gvendi.cross_book.parameters():
+                p.requires_grad_(False)
 
     @staticmethod
     def _build_gvendi_config(args) -> VLMDistillConfig:
         return VLMDistillConfig(
-            proj_dim       = getattr(args, "gvendi_proj_dim",       256),
-            block_size     = getattr(args, "gvendi_block_size",     4096),
-            K_fusion       = getattr(args, "gvendi_K_fusion",       60),
-            K_cross        = getattr(args, "gvendi_K_cross",        40),
-            sinkhorn_reg   = getattr(args, "gvendi_sinkhorn_reg",   0.05),
-            sinkhorn_iters = getattr(args, "gvendi_sinkhorn_iters", 100),
-            lam_fusion     = getattr(args, "gvendi_lam_fusion",     1.2),
-            lam_cross_ot   = getattr(args, "gvendi_lam_cross_ot",   0.5),
-            num_grad_layers= getattr(args, "gvendi_num_grad_layers", 2),
+            proj_dim        = getattr(args, "gvendi_proj_dim",       256),
+            block_size      = getattr(args, "gvendi_block_size",     4096),
+            K_fusion        = getattr(args, "gvendi_K_fusion",       60),
+            K_cross         = getattr(args, "gvendi_K_cross",        40),
+            sinkhorn_reg    = getattr(args, "gvendi_sinkhorn_reg",   0.05),
+            sinkhorn_iters  = getattr(args, "gvendi_sinkhorn_iters", 100),
+            lam_fusion      = getattr(args, "gvendi_lam_fusion",    1.2),
+            lam_cross_ot    = getattr(args, "gvendi_lam_cross_ot",   0.5),
+            num_grad_layers = getattr(args, "gvendi_num_grad_layers", 2),
         )
 
     @staticmethod
@@ -497,10 +512,10 @@ class GVendiVLMCriterion(nn.Module):
         t_qry: torch.Tensor, t_pos: torch.Tensor,
     ) -> torch.Tensor:
         def _angles(x: torch.Tensor) -> torch.Tensor:
-            diffs = x.unsqueeze(0) - x.unsqueeze(1)           # (n,n,d)
+            diffs = x.unsqueeze(0) - x.unsqueeze(1)
             norms = diffs.norm(dim=-1, keepdim=True) + 1e-8
             e     = diffs / norms
-            return torch.einsum("ijd,kjd->ijk", e, e)         # (n,n,n)
+            return torch.einsum("ijd,kjd->ijk", e, e)
 
         s_repr = torch.cat([s_qry, s_pos], dim=0)
         t_repr = torch.cat([t_qry, t_pos], dim=0)
@@ -518,25 +533,54 @@ class GVendiVLMCriterion(nn.Module):
         return torch.where(diff < 1.0, 0.5 * diff ** 2, diff - 0.5).mean()
 
     @staticmethod
-    def _teacher_per_sample_signal(
-        teacher_qry_reps: torch.Tensor,   # (b, D_t)
-        teacher_pos_reps: torch.Tensor,   # (b, D_t)
-    ) -> torch.Tensor:
-        return ((teacher_qry_reps - teacher_pos_reps) ** 2).sum(dim=-1)  # (b,)
-
-    @staticmethod
     def _student_per_sample_signal(
-        student_qry_reps: torch.Tensor,   # (b, D_s)
-        teacher_qry_reps: torch.Tensor,   # (b, D_t)  detached
-        student_proj:     Optional[nn.Linear] = None,
+        student_qry_reps: torch.Tensor,
+        teacher_qry_reps: torch.Tensor,
+        student_proj: Optional[nn.Linear] = None,
     ) -> torch.Tensor:
         s = student_qry_reps
         if student_proj is not None:
             s = student_proj(s)
         t = teacher_qry_reps.detach()
         d = min(s.shape[-1], t.shape[-1])
-        return ((s[..., :d] - t[..., :d]) ** 2).sum(dim=-1)   # (b,)
+        return ((s[..., :d] - t[..., :d]) ** 2).sum(dim=-1)
 
+    def _load_cached_teacher(self, input_data: Dict, device: torch.device):
+        if "cached_gt_v" in input_data and "cached_gt_t" in input_data and "cached_gt_f" in input_data:
+            return (
+                input_data["cached_gt_v"].to(device=device, dtype=torch.float32),
+                input_data["cached_gt_t"].to(device=device, dtype=torch.float32),
+                input_data["cached_gt_f"].to(device=device, dtype=torch.float32),
+            )
+
+        if self.teacher_cache_dir is None:
+            raise ValueError("Phase 2 requires cached_gt_v/t/f in input_data or teacher_cache_dir + sample_id.")
+
+        sample_id = input_data.get("sample_id", None)
+        if sample_id is None:
+            raise ValueError("Phase 2 requires sample_id when loading cached teacher topology from disk.")
+
+        if isinstance(sample_id, list):
+            gt_v_list, gt_t_list, gt_f_list = [], [], []
+            for sid in sample_id:
+                cache_path = os.path.join(self.teacher_cache_dir, f"{sid}.pt")
+                cached = torch.load(cache_path, map_location="cpu", weights_only=True)
+                gt_v_list.append(cached["gt_v"])
+                gt_t_list.append(cached["gt_t"])
+                gt_f_list.append(cached["gt_f"])
+            return (
+                torch.stack(gt_v_list, dim=0).to(device=device, dtype=torch.float32),
+                torch.stack(gt_t_list, dim=0).to(device=device, dtype=torch.float32),
+                torch.stack(gt_f_list, dim=0).to(device=device, dtype=torch.float32),
+            )
+
+        cache_path = os.path.join(self.teacher_cache_dir, f"{sample_id}.pt")
+        cached = torch.load(cache_path, map_location="cpu", weights_only=True)
+        return (
+            cached["gt_v"].to(device=device, dtype=torch.float32),
+            cached["gt_t"].to(device=device, dtype=torch.float32),
+            cached["gt_f"].to(device=device, dtype=torch.float32),
+        )
 
     def forward(
         self,
@@ -552,14 +596,14 @@ class GVendiVLMCriterion(nn.Module):
         teacher_qry_input = input_data["teacher_inputs"]["qry"]
         teacher_pos_input = input_data["teacher_inputs"]["pos"]
 
-        device     = student_qry_input["input_ids"].device
+        device = student_qry_input["input_ids"].device
 
+        # teacher forward only for contrastive + RKD
         with torch.no_grad():
             teacher_model.eval()
             t_qry_out = teacher_model.encode_input(teacher_qry_input)
             t_pos_out = teacher_model.encode_input(teacher_pos_input)
 
-        # Unpack: (reps, image_features, attention, hidden_states)
         t_qry_reps, *_ = t_qry_out
         t_pos_reps, *_ = t_pos_out
 
@@ -568,7 +612,7 @@ class GVendiVLMCriterion(nn.Module):
         s_qry_reps, *_ = s_qry_out
         s_pos_reps, *_ = s_pos_out
 
-        # ── Contrastive (InfoNCE) loss ───────────────────────────────────
+        # Contrastive (InfoNCE)
         if self.world_size > 1:
             all_s_qry = self._dist_gather(s_qry_reps)
             all_s_pos = self._dist_gather(s_pos_reps)
@@ -576,31 +620,24 @@ class GVendiVLMCriterion(nn.Module):
             all_s_qry = s_qry_reps
             all_s_pos = s_pos_reps
 
-        scores     = student_model.compute_similarity(all_s_qry, all_s_pos)
-        scores     = scores.view(all_s_qry.size(0), -1)
-        targets    = torch.arange(scores.size(0), device=device, dtype=torch.long)
-        targets   *= all_s_qry.size(0) // all_s_pos.size(0)
-        L_contrastive = nn.CrossEntropyLoss()(
-            scores / distiller.temperature, targets)
+        scores   = student_model.compute_similarity(all_s_qry, all_s_pos)
+        scores   = scores.view(all_s_qry.size(0), -1)
+        targets  = torch.arange(scores.size(0), device=device, dtype=torch.long)
+        targets *= all_s_qry.size(0) // all_s_pos.size(0)
 
-        # ── RKD loss ─────────────────────────────────────────────────────
-        L_rkd_dist  = self._rkd_distance(
-            s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
-        L_rkd_angle = self._rkd_angle(
-            s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
+        L_contrastive = nn.CrossEntropyLoss()(
+            scores / distiller.temperature, targets
+        )
+
+        # RKD
+        L_rkd_dist  = self._rkd_distance(s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
+        L_rkd_angle = self._rkd_angle(s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
         L_rkd       = (L_rkd_dist + L_rkd_angle) / 2.0
 
-        for p in teacher_model.parameters():
-            p.requires_grad_(True)
+        # cached teacher topology from phase 1
+        cached_gt_v, cached_gt_t, cached_gt_f = self._load_cached_teacher(input_data, device)
 
-        t_per_sample = self._teacher_per_sample_signal(
-            teacher_model.encode_input(teacher_qry_input)[0],
-            teacher_model.encode_input(teacher_pos_input)[0],
-        )  
-
-        for p in teacher_model.parameters():
-            p.requires_grad_(False)
-
+        # build student per-sample signal
         if not hasattr(self, "_dim_align_proj"):
             d_s = s_qry_reps.shape[-1]
             d_t = t_qry_reps.shape[-1]
@@ -610,17 +647,57 @@ class GVendiVLMCriterion(nn.Module):
                 self._dim_align_proj = None
 
         s_per_sample = self._student_per_sample_signal(
-            s_qry_reps, t_qry_reps, self._dim_align_proj) 
-
-        L_gvendi, comps = self.gvendi(
-            t_per_sample,
-            s_per_sample,
-            teacher_model,
-            student_model,
-            return_components=True,
+            s_qry_reps, t_qry_reps, self._dim_align_proj
         )
 
-        torch.cuda.empty_cache()
+        # student gradient extraction only
+        with torch.enable_grad():
+            gs_v_raw, gs_t_raw, gs_f_raw = self.gvendi.extractor.extract(
+                student_model,
+                s_per_sample,
+                retain_graph=True,
+            )
+
+        gs_v, gs_t, gs_f = self.gvendi._project_bundle(
+            gs_v_raw, gs_t_raw, gs_f_raw, is_teacher=False
+        )
+
+        gs_v_p = F.normalize(self.gvendi.pj_v(gs_v), dim=-1)
+        gs_t_p = F.normalize(self.gvendi.pj_t(gs_t), dim=-1)
+        gs_f_p = F.normalize(self.gvendi.pj_f(gs_f), dim=-1)
+
+        cfg = self.gvendi.cfg
+
+        # fusion OT + commitment using cached teacher fusion topology
+        cost_f = _sq_euclidean(cached_gt_f, self.gvendi.book_f.normalized.detach())
+        with torch.no_grad():
+            gamma_f = _sinkhorn_log(cost_f, cfg.sinkhorn_reg, cfg.sinkhorn_iters)
+            k_star_f = cost_f.argmin(dim=1)
+        L_OT_f = (gamma_f * cost_f).sum()
+        L_cm_f = F.mse_loss(
+            gs_f_p,
+            self.gvendi.book_f.normalized.detach()[k_star_f],
+            reduction="sum",
+        )
+
+        # cross-modal OT + commitment using cached teacher visual/text topology
+        cost_cross = self.gvendi.cross_book.cost_matrix(cached_gt_v, cached_gt_t)
+        with torch.no_grad():
+            gamma_cross = _sinkhorn_log(cost_cross, cfg.sinkhorn_reg, cfg.sinkhorn_iters)
+            k_star_cross = cost_cross.argmin(dim=1)
+
+        L_OT_cross = (gamma_cross * cost_cross).sum()
+        v_tgt = self.gvendi.cross_book.v_norm.detach()[k_star_cross]
+        t_tgt = self.gvendi.cross_book.t_norm.detach()[k_star_cross]
+        L_cm_cross = (
+            F.mse_loss(gs_v_p, v_tgt, reduction="sum")
+            + F.mse_loss(gs_t_p, t_tgt, reduction="sum")
+        )
+
+        stream_f = cfg.lam_fusion * (L_OT_f + L_cm_f)
+        L_cross  = cfg.lam_cross_ot * (L_OT_cross + L_cm_cross)
+
+        L_gvendi = stream_f + L_cross
 
         total_loss = (
             L_contrastive
@@ -628,22 +705,17 @@ class GVendiVLMCriterion(nn.Module):
             + self.w_gvendi * L_gvendi
         )
 
-        # w_v, w_t = self.gvendi.adapt_w.weights()
         log = {
             "loss":              total_loss,
             "contrastive_loss":  L_contrastive,
             "rkd_loss":          L_rkd,
             "gvendi_total":      L_gvendi,
         }
-        if comps is not None:
-            log.update({
-                "gvendi_ot_fusion":          torch.tensor(comps.ot_fusion,          device=device),
-                "gvendi_align_fusion":       torch.tensor(comps.align_fusion,       device=device),
-                "gvendi_cross_modal_ot":     torch.tensor(comps.cross_modal_ot,     device=device),
-                # "gvendi_gradient_augment":   torch.tensor(comps.gradient_augment,   device=device),
-                # "gvendi_cross_modal_cons":   torch.tensor(comps.cross_modal_cons,   device=device),
-                # "gvendi_adaptive_w_visual":  torch.tensor(w_v,                      device=device),
-                # "gvendi_adaptive_w_text":    torch.tensor(w_t,                      device=device),
-            })
+
+        log.update({
+            "gvendi_ot_fusion":      L_OT_f.detach(),
+            "gvendi_align_fusion":   L_cm_f.detach(),
+            "gvendi_cross_modal_ot": L_cross.detach(),
+        })
 
         return log
