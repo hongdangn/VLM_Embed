@@ -24,7 +24,7 @@ class GVendiLossComponents:
 
 @dataclass
 class VLMDistillConfig:
-    proj_dim:        int   = 512
+    proj_dim:        int   = 256
     block_size:      int   = 4096          
 
     K_fusion:        int   = 60
@@ -35,9 +35,9 @@ class VLMDistillConfig:
 
     lam_fusion:      float = 1.2
 
-    lam_cross_ot:    float = 0.5           # innovation 1
+    lam_cross_ot:    float = 0.5           
 
-    num_grad_layers: int   = 2             # last-k layers used for grad extraction
+    num_grad_layers: int   = 1             
 
 def _sinkhorn_log(
     cost:  torch.Tensor,   
@@ -68,7 +68,7 @@ class RademacherProjection(nn.Module):
     def __init__(
         self,
         param_dim:  int,
-        proj_dim:   int  = 512,
+        proj_dim:   int  = 256,
         seed:       int  = 42,
         block_size: int  = 4096,
     ):
@@ -437,7 +437,7 @@ class GVendiVLMCriterion(nn.Module):
     @staticmethod
     def _build_gvendi_config(args) -> VLMDistillConfig:
         return VLMDistillConfig(
-            proj_dim       = getattr(args, "gvendi_proj_dim",       512),
+            proj_dim       = getattr(args, "gvendi_proj_dim",       256),
             block_size     = getattr(args, "gvendi_block_size",     4096),
             K_fusion       = getattr(args, "gvendi_K_fusion",       60),
             K_cross        = getattr(args, "gvendi_K_cross",        40),
@@ -619,6 +619,8 @@ class GVendiVLMCriterion(nn.Module):
             student_model,
             return_components=True,
         )
+
+        torch.cuda.empty_cache()
 
         total_loss = (
             L_contrastive
