@@ -114,8 +114,7 @@ class Trainer:
         
     def run_epoch(self, epoch):
         self.train_data.sampler.set_epoch(epoch)
-        losses, contrastive_losses, span_losses = [], [], []
-        kd_rkd_losses, cross_modal_losses, kd_dtw_losses = [], [], []
+        losses = {}
         
         progress_bar = tqdm(total=len(self.train_data.dataset) // self.training_args.per_device_train_batch_size // self.training_args.gradient_accumulation_steps // dist.get_world_size(), 
                             desc=f"Epoch {epoch}",
@@ -123,46 +122,31 @@ class Trainer:
         for batch_idx, batch in enumerate(self.train_data):
             batch = to_device(batch, self.device)
             loss_dict = self.distiller(self.criterion, batch)
-            loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
-            span_loss = loss_dict.get('span_loss', torch.tensor(0.0))
-            contrastive_loss = loss_dict.get('contrastive_loss', torch.tensor(0.0))
-            kd_rkd_loss = loss_dict.get('kd_loss_rkd', torch.tensor(0.0))
-            cross_modal_loss = loss_dict.get('cross_modal_loss', torch.tensor(0.0))
-            kd_dtw_loss = loss_dict.get('kd_loss_dtw', torch.tensor(0.0))
+            total_loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
 
-            losses.append(loss.detach().item() * self.training_args.gradient_accumulation_steps)
-            contrastive_losses.append(contrastive_loss.detach().item())
-            span_losses.append(span_loss.detach().item())
-            kd_rkd_losses.append(kd_rkd_loss.detach().item())
-            cross_modal_losses.append(cross_modal_loss.detach().item())
-            kd_dtw_losses.append(kd_dtw_loss.detach().item())
+            if batch_idx == 0:
+                losses = {loss_type: [] for loss_type in loss_dict}
             
-            batch_loss = sum(losses) / len(losses)
-            batch_contrastive_loss = sum(contrastive_losses) / len(contrastive_losses)
-            batch_kd_loss = sum(span_losses) / len(span_losses)
-            batch_kd_rkd_loss = sum(kd_rkd_losses) / len(kd_rkd_losses)
-            batch_cross_modal_loss = sum(cross_modal_losses) / len(cross_modal_losses)
-            batch_kd_dtw_loss = sum(kd_dtw_losses) / len(kd_dtw_losses)
+            for loss_type in losses:
+                batch_loss = loss_dict.get(loss_type, torch.tensor(0.0))
+                losses[loss_type].append(batch_loss.detach().item())
+
+            total_loss.backward()
             
-            loss.backward()
             if (batch_idx + 1) % self.training_args.gradient_accumulation_steps == 0:
                 self.optimizer.step()
                 self.lr_scheduler.step()
                 self.optimizer.zero_grad()
             
                 if is_main_process():
-                    progress_bar.set_postfix({
-                        'loss': f"{batch_loss:.4f}",
-                        'kd_loss': f"{batch_kd_loss:.4f}",
-                        'contrastive_loss': f"{batch_contrastive_loss:.4f}",
-                        'kd_rkd_loss': f"{batch_kd_rkd_loss:.4f}",
-                        'cross_modal_loss': f"{batch_cross_modal_loss:.4f}",
-                        'kd_dtw_loss': f"{batch_kd_dtw_loss:.4f}",
-                        'lr': f"{self.lr_scheduler.get_last_lr()[0]:.6f}",
-                    })
+                    postfix_batch_loss = {
+                        loss_type: f"{(sum(losses[loss_type]) / len(losses[loss_type])):.4f}"
+                        for loss_type in losses
+                    }
+                    progress_bar.set_postfix(postfix_batch_loss)
                     progress_bar.update(1)
                 
-            torch.cuda.empty_cache()
+            # torch.cuda.empty_cache()
         progress_bar.close()
         
     def train(self):

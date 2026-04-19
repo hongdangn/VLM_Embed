@@ -78,8 +78,9 @@ class DataArguments:
     pos_only: bool = field(default=False, metadata={"help": "Only use positives"})
     # new args distillation
     percent_data: float = field(default=1.0, metadata={"help": "percentage of data used for distillation training"})
-    
-
+    need_hash: bool = field(default=False, metadata={"help": ""})
+    need_cache_teacher_grad: bool = field(default=False, metadata={"help": ""})
+    teacher_cache_dir: str = field(default=None, metadata={"help": ""})
 
 @dataclass
 class TrainingArguments(TrainingArguments):

@@ -10,6 +10,7 @@ import torch
 import torch.nn as nn
 import PIL
 import argparse
+import hashlib
 from transformers import (
     AutoConfig,
     AutoTokenizer,
@@ -150,7 +151,7 @@ class Distiller(nn.Module):
     def forward(self, criterion, batch):
         if self.training_args.kd_loss_type in ['span_propose_attn', 'span_propose', 'span_propose_attn_only_phrase' ]:
             loss = criterion(self, batch, tokenizer = self.tokenizer)
-            
+
         elif "gvendi" in self.training_args.kd_loss_type:
             loss = criterion(self, batch)
         else: 
@@ -322,6 +323,22 @@ class DistillationDataset(Dataset):
             train_data.append(subset_data)
             
         self.train_data = concatenate_datasets(train_data)
+
+        if data_args.need_hash:
+            def generate_hash_id(example):
+                strings = [
+                    str(example.get("qry", "")),
+                    str(example.get("qry_image_path", "")),
+                    str(example.get("pos_image_path", "")),
+                    str(example.get("pos_text", ""))
+                ]
+
+                full_item = "|".join(strings)
+
+                return {"sample_id": hashlib.md5(full_item.encode('utf-8')).hexdigest()}
+            
+            self.train_data = self.train_data.map(generate_hash_id)
+
         print_rank(f"Loaded {len(self.train_data)} samples from {self.data_args.dataset_name} with subsets {self.data_args.subset_name}")
     
     def __len__(self):
@@ -401,7 +418,28 @@ class DistillationDataset(Dataset):
             teacher_qry_images.append(teacher_qry_image)
             teacher_pos_texts.append(teacher_pos_text)
             teacher_pos_images.append(teacher_pos_image)
-            
+        # phase 2
+        if self.data_args.need_hash and self.data_args.teacher_cache_dir is not None:
+            sample_id = self.train_data[data_idx]["sample_id"]
+            cache_path = os.path.join(self.teacher_cache_dir, f"{sample_id}.pt")
+            cached_grads = torch.load(cache_path, weights_only=True)
+
+            return {
+                "sample_id": sample_id,
+                "student_query_text": student_qry_texts,
+                "student_query_image": student_qry_images,
+                "student_pos_text": student_pos_texts,
+                "student_pos_image": student_pos_images,
+                "teacher_query_text": teacher_qry_texts,
+                "teacher_query_image": teacher_qry_images,
+                "teacher_pos_text": teacher_pos_texts,
+                "teacher_pos_image": teacher_pos_images,
+                "cached_gt_v": cached_grads["gt_v"],
+                "cached_gt_t": cached_grads["gt_t"],
+                "cached_gt_f": cached_grads["gt_f"],
+            }            
+        
+        # phase 1
         return {
             "student_query_text": student_qry_texts,
             "student_query_image": student_qry_images,
