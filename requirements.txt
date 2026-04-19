@@ -28,3 +28,4 @@ numba
 hdbscan
 spacy
 tslearn
+gpustat
