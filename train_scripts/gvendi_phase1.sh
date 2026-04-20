@@ -1,10 +1,18 @@
+MODEL_NAME="apple/FastVLM-0.5B"
+TEACHER_MODEL_NAME="raghavlite/B3_Qwen2_2B"
+
+MODEL_BACKBONE="llava_qwen2"
+TEACHER_BACKBONE="qwen2_vl"
+
 torchrun \
     --standalone \
     --nproc_per_node=1 \
     --master_port=29500 \
     gvendi_phase1_training.py \
-    --model_name "raghavlite/B3_Qwen2_2B" \
-    --model_backbone "qwen2_vl" \
+    --model_name $MODEL_NAME \
+    --lora True \
+    --lora_r 8 \
+    --model_backbone $MODEL_BACKBONE \
     --bf16 \
     --pooling eos \
     --normalize True \
@@ -28,4 +36,7 @@ torchrun \
     --weight_decay 0.01 \
     --warmup_ratio 0.03 \
     --image_resolution low \
-    --num_last_layer 1
+    --num_last_layer 1 \
+    --full_layer_grad False \
+    --gvendi_dim 256 \
+    --num_centroids 100 \

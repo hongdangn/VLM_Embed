@@ -44,8 +44,12 @@ class ModelArguments:
     student_hidden_dim: int = field(default=896, metadata={"help": "student hidden dim"})
     teacher_hidden_dim: int = field(default=1536, metadata={"help": "teacher hidden dim"})
     load_pretrained_lora: bool = field(default=False, metadata={"help": "load pretrained lora model for student"})
-    #! new args for span loss
+    #! new args for gvendi
     num_last_layer: int = field(default=1, metadata={"help": "number of last layers to apply gvendi phase1"})
+    full_layer_grad: bool = field(default=False, metadata={"help": "whether to use full layer gradient for gvendi, if false, only use the gradient of lora"})
+
+    num_centroids: int = field(default=100, metadata={"help": "number of centroids for gvendi codebook"})
+    gvendi_dim: int = field(default=256, metadata={"help": "dimension for gvendi"})
 
 @dataclass
 class DataArguments:

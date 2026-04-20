@@ -21,6 +21,7 @@ from peft import (
     TaskType,
     get_peft_model
 )
+from src.codebook import GVendiCodebook
 from src.model.model import MMEBModel
 from src.model.processor import VLM_IMAGE_TOKENS, load_processor, get_backbone_name, process_vlm_inputs_fns, backbone2model, \
     LLAVA_NEXT, QWEN2_VL, LLAVA_ONEVISION, QWEN2_5_VL_TOKENSELECTION, QWEN2_5_VL, QWEN2_VL_TOKENSELECTION, PHI3V
@@ -79,9 +80,55 @@ class OneModelTrainer(nn.Module):
         self.training_args = training_args
         self.device = device
         self.model = self._load_model()
-        self.target_layers = [self.model.encoder.model.layers[-i] for i in range(1, model_args.num_last_layer + 1)]
-        self.target_params = [p for layer in self.target_layers for p in layer.parameters()]
+        self.target_layers, self.target_params, self.target_named_params = self.get_target_grad_params()
         self.temperature = model_args.temperature
+        self.codebook = self._load_codebook()
+    
+    def get_target_grad_params(self):
+        # 1. Bóc lớp vỏ PEFT (nếu có) để dễ dàng truy cập vào các thuộc tính bên trong
+        current_encoder = self.model.encoder
+        
+        if isinstance(current_encoder, PeftModel):
+            print("Model encoder is a PeftModel, accessing the underlying model.")
+            # get_base_model() trả về cấu trúc gốc, nhưng các module bên trong ĐÃ ĐƯỢC GẮN LORA
+            base_model = current_encoder.get_base_model()
+        else:
+            base_model = current_encoder
+
+        # 2. Tìm đúng đường dẫn tới danh sách các layer (Tránh lỗi AttributeError như trước)
+        # Tùy thuộc vào kiến trúc, 'layers' có thể nằm ở các vị trí khác nhau
+        if hasattr(base_model, 'model') and hasattr(base_model.model, 'layers'):
+            layers_list = base_model.model.layers
+        elif hasattr(base_model, 'layers'):
+            layers_list = base_model.layers
+        else:
+            raise AttributeError("Không tìm thấy 'layers' trong cấu trúc của base_model. Hãy kiểm tra lại architecture.")
+
+        print('=====================================')
+        
+        # 3. Trích xuất các layer cuối
+        target_layers = [layers_list[-i] for i in range(1, self.model_args.num_last_layer + 1)]
+        target_params = []
+        target_named_params = []
+
+        # 4. Phân loại và lấy tham số TỪ BÊN TRONG từng layer
+        for layer in target_layers:
+            if getattr(self.model_args, 'full_layer_grad', False):
+                # NẾU TRUE: Lấy TOÀN BỘ (bao gồm cả trọng số gốc VÀ trọng số LoRA nằm trong layer này)
+                target_params.extend(list(layer.parameters()))
+            else:
+                # NẾU FALSE: Lọc ra và CHỈ LẤY trọng số LoRA nằm trong layer này
+                for name, param in layer.named_parameters():
+                    if "lora" in name.lower():
+                        target_params.append(param)
+                        target_named_params.append(name)
+
+        return target_layers, target_params, target_named_params
+
+    def _load_codebook(self):
+        codebook = GVendiCodebook(K=self.model_args.num_centroids, d=self.model_args.gvendi_dim)
+        codebook.to(self.device)
+        return codebook
     
     def _load_model(self):
         if self.model_args.lora:

@@ -42,18 +42,18 @@ def get_optimizer_params(model, training_args):
 
     return optimizer_grouped_parameters
 
-def get_optimizer(model, training_args):
-    while isinstance(model, DDP):
-        model = model.module
-    optimizer_grouped_parameters = get_optimizer_params(model, training_args)
-    optimizer = AdamW(
-        optimizer_grouped_parameters, 
-        lr=training_args.learning_rate,
-        betas=(0.9, 0.999),
-        eps=1e-8,
-        weight_decay=training_args.weight_decay,
-    )
-    return optimizer
+# def get_optimizer(model, training_args):
+#     while isinstance(model, DDP):
+#         model = model.module
+#     optimizer_grouped_parameters = get_optimizer_params(model, training_args)
+#     optimizer = AdamW(
+#         optimizer_grouped_parameters, 
+#         lr=training_args.learning_rate,
+#         betas=(0.9, 0.999),
+#         eps=1e-8,
+#         weight_decay=training_args.weight_decay,
+#     )
+#     return optimizer
 
 def is_main_process():
     return (not dist.is_initialized()) or dist.get_rank() == 0
@@ -78,7 +78,7 @@ def ddp_setup():
     init_process_group(backend="nccl")
 
 class Trainer:
-    def __init__(self, trainer, train_data, optimizer, lr_scheduler, criterion, model_args, training_args):
+    def __init__(self, trainer, train_data, criterion, model_args, training_args):
         print_rank("Initializing Trainer...")
         self.gpu_id = int(os.environ['LOCAL_RANK'])
         # self.gpu_id = 0
@@ -86,8 +86,8 @@ class Trainer:
         self.device = torch.device(f'cuda:{self.gpu_id}')
         self.trainer = trainer.to(self.device)
         self.train_data = train_data
-        self.optimizer = optimizer
-        self.lr_scheduler = lr_scheduler
+        # self.optimizer = optimizer
+        # self.lr_scheduler = lr_scheduler
         self.criterion = criterion
         self.model_args = model_args
         self.training_args = training_args
@@ -131,28 +131,27 @@ class Trainer:
             # with torch.autocast(enabled=True, dtype=torch.bfloat16, device_type='cuda'):
             loss_dict = self.trainer(self.criterion, batch)
 
-            total_loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
-            contrastive_loss = loss_dict['contrastive_loss']
+            # total_loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
+            # contrastive_loss = loss_dict['contrastive_loss']
 
-            total_losses.append(loss_dict['loss'].detach().item())
-            contrastive_losses.append(contrastive_loss.detach().item())
+            # total_losses.append(loss_dict['loss'].detach().item())
+            # contrastive_losses.append(contrastive_loss.detach().item())
             
-            batch_loss = sum(total_losses)/len(total_losses)
-            batch_contrastive_loss = sum(contrastive_losses)/len(contrastive_losses)
+            # batch_loss = sum(total_losses)/len(total_losses)
+            # batch_contrastive_loss = sum(contrastive_losses)/len(contrastive_losses)
             
-            total_loss.backward()
-            if (batch_idx + 1) % self.training_args.gradient_accumulation_steps == 0:
-                self.optimizer.step()
-                self.lr_scheduler.step()
-                self.optimizer.zero_grad()
+            # if (batch_idx + 1) % self.training_args.gradient_accumulation_steps == 0:
+            #     self.optimizer.step()
+            #     self.lr_scheduler.step()
+            #     self.optimizer.zero_grad()
             
-                if is_main_process():
-                    progress_bar.set_postfix({
-                        "loss": f"{batch_loss:.4f}",
-                        "contrastive_loss": f"{batch_contrastive_loss:.4f}",
-                        "lr": f"{self.lr_scheduler.get_last_lr()[0]:.2e}"
-                    })
-                    progress_bar.update(1)
+            #     if is_main_process():
+            #         progress_bar.set_postfix({
+            #             "loss": f"{batch_loss:.4f}",
+            #             "contrastive_loss": f"{batch_contrastive_loss:.4f}",
+            #             # "lr": f"{self.lr_scheduler.get_last_lr()[0]:.2e}"
+            #         })
+            #         progress_bar.update(1)
             torch.cuda.empty_cache()
         progress_bar.close()
         
@@ -242,41 +241,41 @@ def main():
         p.requires_grad = True
         num_trainable_vision += p.numel()
 
-    print(f"Number of Vision Tower's trainable parameters: {num_trainable_vision}")
+    print(f"Number of gradient gvendi parameters: {num_trainable_vision}")
     # exit(0)
 
     print(f"Len of train dataset: {len(train_dataloader.dataset)}")
-    total_steps = (len(train_dataloader.dataset) // (training_args.per_device_train_batch_size * dist.get_world_size()) // training_args.gradient_accumulation_steps) * training_args.num_train_epochs
+    # total_steps = (len(train_dataloader.dataset) // (training_args.per_device_train_batch_size * dist.get_world_size()) // training_args.gradient_accumulation_steps) * training_args.num_train_epochs
 
-    optimizer = AdamW(
-        model_trainer.model.parameters(),
-        lr=training_args.learning_rate,
-        betas=(0.9, 0.999),
-        eps=1e-8,
-        weight_decay=training_args.weight_decay,
-    )
+    # optimizer = AdamW(
+    #     model_trainer.model.parameters(),
+    #     lr=training_args.learning_rate,
+    #     betas=(0.9, 0.999),
+    #     eps=1e-8,
+    #     weight_decay=training_args.weight_decay,
+    # )
         
-    if training_args.lr_scheduler_type == "linear":
-        from transformers import get_linear_schedule_with_warmup
-        lr_scheduler = get_linear_schedule_with_warmup(
-            optimizer,
-            num_warmup_steps=training_args.warmup_ratio * total_steps ,
-            num_training_steps=total_steps,
-        )
-    elif training_args.lr_scheduler_type == "cosine":
-        from transformers import get_cosine_schedule_with_warmup
-        lr_scheduler = get_cosine_schedule_with_warmup(
-            optimizer,
-            num_warmup_steps=training_args.warmup_ratio * total_steps,
-            num_training_steps=total_steps,
-        )
-    else:
-        # Default constant learning rate
-        from transformers import get_constant_schedule
-        lr_scheduler = get_constant_schedule(optimizer)
+    # if training_args.lr_scheduler_type == "linear":
+    #     from transformers import get_linear_schedule_with_warmup
+    #     lr_scheduler = get_linear_schedule_with_warmup(
+    #         optimizer,
+    #         num_warmup_steps=training_args.warmup_ratio * total_steps ,
+    #         num_training_steps=total_steps,
+    #     )
+    # elif training_args.lr_scheduler_type == "cosine":
+    #     from transformers import get_cosine_schedule_with_warmup
+    #     lr_scheduler = get_cosine_schedule_with_warmup(
+    #         optimizer,
+    #         num_warmup_steps=training_args.warmup_ratio * total_steps,
+    #         num_training_steps=total_steps,
+    #     )
+    # else:
+    #     # Default constant learning rate
+    #     from transformers import get_constant_schedule
+    #     lr_scheduler = get_constant_schedule(optimizer)
         
     criterion = build_criterion(training_args, model_trainer)
-    trainer = Trainer(model_trainer, train_dataloader, optimizer, lr_scheduler, criterion, model_args, training_args)
+    trainer = Trainer(model_trainer, train_dataloader, criterion, model_args, training_args)
     trainer.train()
     
 if __name__ == "__main__":
