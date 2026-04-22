@@ -1,11 +1,11 @@
-MODEL_NAME=/mnt/disk1/backup_user/dang.nh4/VLM_Embed/training/rebuttal_hierd_cls_3_layers/checkpoint-final
+MODEL_NAME=/mnt/disk1/backup_user/dang.nh4/VLM_Embed/training/gvendi_phase2/checkpoint-epoch-0
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
 IMAGE_DIR="/mnt/disk1/backup_user/dang.nh4/eval-data"
-BATCH_SIZE=32
+BATCH_SIZE=48
 
-datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007) 
-
+# datasets=(ImageNet-1K HatefulMemes SUN397 N24News VOC2007) 
+datasets=(Place365 ImageNet-A ImageNet-R ObjectNet Country211)
 # export CUDA_VISIBLE_DEVICES=2
 echo "Starting comprehensive model evaluation for $MODEL_NAME"
 echo "Targeting ${#datasets[@]} MMEB subsets."

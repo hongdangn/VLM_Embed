@@ -1,11 +1,11 @@
-NUM_GPUS_PER_NODE=1
+NUM_GPUS_PER_NODE=2
 
 TRAIN_SCRIPT="gvendi_phase1.py"
 teacher_cache_dir="./teacher_grad_dir/"
 
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=5,6
 
 # phase 1 training
 # torchrun --standalone \
@@ -71,7 +71,7 @@ torchrun --standalone \
     --image_dir "/mnt/disk1/backup_user/dang.nh4/vlm2vec_train/MMEB-train" \
     --percent_data 1.0 \
     --output_dir "training/gvendi_phase2" \
-    --per_device_train_batch_size 4 \
+    --per_device_train_batch_size 8 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \
     --num_train_epochs 1 \
