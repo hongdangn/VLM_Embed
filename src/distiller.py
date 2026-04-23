@@ -343,6 +343,16 @@ class DistillationDataset(Dataset):
             
             self.train_data = self.train_data.map(generate_hash_id)
 
+        if self.teacher_cache_dir and os.path.isdir(self.teacher_cache_dir):
+            
+            def has_cached_gradient(example):
+                sample_id = example.get("sample_id")
+                grad_path = os.path.join(self.teacher_cache_dir, f"{sample_id}.pt")
+
+                return os.path.isfile(grad_path)
+            
+            self.train_data = self.train_data.filter(has_cached_gradient)
+        
         print_rank(f"Loaded {len(self.train_data)} samples from {self.data_args.dataset_name} with subsets {self.data_args.subset_name}")
     
     def __len__(self):

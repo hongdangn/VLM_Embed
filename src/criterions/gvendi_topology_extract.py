@@ -165,6 +165,20 @@ class GvendiTopologyExtract(nn.Module):
             block_size      = 4096,
             num_grad_layers = 1,
         )
+    
+    def _check_cached_teacher_list(
+        self,
+        sample_ids: List[str],
+    ) -> bool:
+
+        if self.teacher_cache_dir is None:
+            return False
+        
+        for sid in sample_ids:
+            path = os.path.join(self.teacher_cache_dir, f"{sid}.pt")
+            if not os.path.isfile(path):
+                return False
+        return True
 
     @staticmethod
     def _stream_dims(

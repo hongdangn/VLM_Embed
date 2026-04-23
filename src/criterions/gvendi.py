@@ -39,7 +39,7 @@ def get_last_layer_id(model):
                 if "layers" in name:
                     layer_ids.append(int(split_name[i + 1]))
                     break
-    print("Extracting gradients from layers:", sorted(set(layer_ids)))
+
     return max(layer_ids)
 
 
@@ -290,11 +290,6 @@ class GVendiVLMCriterion(nn.Module):
         teacher_qry_input = input_data["teacher_inputs"]["qry"]
         teacher_pos_input = input_data["teacher_inputs"]["pos"]
         device = student_qry_input["input_ids"].device
-
-        sample_ids  = input_data["sample_ids"]
-        
-        if not self._check_cached_teacher_exists(sample_ids):
-            return {"skip_batch": True}
         
         with torch.no_grad():
             teacher_model.eval()
@@ -318,6 +313,7 @@ class GVendiVLMCriterion(nn.Module):
             + self._rkd_angle  (s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
         ) / 2.0
         
+        sample_ids = input_data["sample_ids"]
         gt_projected = self._load_cached_teacher(sample_ids, device)  
 
         # for n, p in student_model.named_parameters():

@@ -125,11 +125,6 @@ class Trainer:
             with torch.amp.autocast("cuda", torch.bfloat16):
                 loss_dict = self.distiller(self.criterion, batch)
             
-            if loss_dict.get("skip_batch", False):
-                print_rank(f"Skipping batch {batch_idx} due to missing gradient cache.")
-                skipped_batches += 1
-                continue
-            
             total_loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
 
             if batch_idx == 0:
@@ -137,8 +132,7 @@ class Trainer:
             
             for loss_type in losses:
                 batch_loss = loss_dict.get(loss_type, torch.tensor(0.0))
-                if loss_type != "skip_batch":
-                    losses[loss_type].append(batch_loss.detach().item())
+                losses[loss_type].append(batch_loss.detach().item())
 
             total_loss.backward()
             
@@ -253,7 +247,7 @@ def main():
         batch_size=training_args.per_device_train_batch_size,
         sampler=dist_sampler,
         collate_fn=collator,
-        drop_last=True,
+        drop_last=False,
         pin_memory=False,
     )
     num_trainable_vision = 0

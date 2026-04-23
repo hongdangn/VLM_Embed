@@ -75,7 +75,7 @@ def ddp_setup():
     init_process_group(backend="nccl")
 
 class Trainer:
-    def __init__(self, distiller, train_data, optimizer, lr_scheduler, criterion, model_args, training_args):
+    def __init__(self, distiller, train_data, optimizer, lr_scheduler, criterion, model_args, training_args, data_args):
         print_rank("Initializing Trainer...")
         self.gpu_id = int(os.environ['LOCAL_RANK'])
         self.device = torch.device(f'cuda:{self.gpu_id}')
@@ -86,7 +86,7 @@ class Trainer:
         self.criterion = criterion
         self.model_args = model_args
         self.training_args = training_args
-        
+        self.teacher_cache_dir = data_args.teacher_cache_dir
         self.distiller = DDP(self.distiller, device_ids=[self.gpu_id])
     
     def _debug_batch_devices(self, obj, prefix=""):
@@ -111,6 +111,20 @@ class Trainer:
                 print(f"{prefix}Type: {type(obj).__name__}, Value: {obj}")
         except Exception as e:
             print(f"{prefix}ERROR: {e}")
+
+    def _check_cached_teacher_list(
+        self,
+        sample_ids,
+    ) -> bool:
+
+        if self.teacher_cache_dir is None:
+            return False
+        
+        for sid in sample_ids:
+            path = os.path.join(self.teacher_cache_dir, f"{sid}.pt")
+            if not os.path.isfile(path):
+                return False
+        return True
         
     def run_epoch(self, epoch):
         self.train_data.sampler.set_epoch(epoch)
@@ -122,8 +136,7 @@ class Trainer:
         for batch_idx, batch in enumerate(self.train_data):
             batch = to_device(batch, self.device)
             loss_dict = self.distiller(self.criterion, batch)
-            total_loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
-
+            
             if batch_idx == 0:
                 losses = {loss_type: [] for loss_type in loss_dict}
             
@@ -241,7 +254,7 @@ def main():
         batch_size=training_args.per_device_train_batch_size,
         sampler=dist_sampler,
         collate_fn=collator,
-        drop_last=True,
+        drop_last=False,
         pin_memory=False,
     )
     num_trainable_vision = 0
@@ -294,7 +307,7 @@ def main():
             num_warmup_steps=training_args.warmup_ratio * total_steps,
         )
     criterion = build_criterion(data_args, training_args, distiller)
-    trainer = Trainer(distiller, train_dataloader, optimizer, lr_scheduler, criterion, model_args, training_args)
+    trainer = Trainer(distiller, train_dataloader, optimizer, lr_scheduler, criterion, model_args, training_args, data_args)
     trainer.train()
     
 if __name__ == "__main__":
