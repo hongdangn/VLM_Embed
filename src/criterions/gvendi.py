@@ -216,6 +216,20 @@ class GVendiVLMCriterion(nn.Module):
         bufs[self.process_rank] = t
         return torch.cat(bufs, dim=0)
 
+    def _check_cached_teacher_exists(
+        self,
+        sample_ids: List[str],
+    ) -> bool:
+
+        if self.teacher_cache_dir is None:
+            return False
+        
+        for sid in sample_ids:
+            path = os.path.join(self.teacher_cache_dir, f"{sid}.pt")
+            if not os.path.isfile(path):
+                return False
+        return True
+
     def _load_cached_teacher(
         self,
         sample_ids: List[str],
@@ -277,6 +291,11 @@ class GVendiVLMCriterion(nn.Module):
         teacher_pos_input = input_data["teacher_inputs"]["pos"]
         device = student_qry_input["input_ids"].device
 
+        sample_ids  = input_data["sample_ids"]
+        
+        if not self._check_cached_teacher_exists(sample_ids):
+            return {"skip_batch": True}
+        
         with torch.no_grad():
             teacher_model.eval()
             t_qry_reps, *_ = teacher_model.encode_input(teacher_qry_input)
@@ -298,8 +317,7 @@ class GVendiVLMCriterion(nn.Module):
             self._rkd_distance(s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
             + self._rkd_angle  (s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
         ) / 2.0
-
-        sample_ids  = input_data["sample_ids"]           
+        
         gt_projected = self._load_cached_teacher(sample_ids, device)  
 
         # for n, p in student_model.named_parameters():

@@ -115,6 +115,7 @@ class Trainer:
     def run_epoch(self, epoch):
         self.train_data.sampler.set_epoch(epoch)
         losses = {}
+        skipped_batches = 0
         
         progress_bar = tqdm(total=len(self.train_data.dataset) // self.training_args.per_device_train_batch_size // self.training_args.gradient_accumulation_steps // dist.get_world_size(), 
                             desc=f"Epoch {epoch}",
@@ -123,14 +124,21 @@ class Trainer:
             batch = to_device(batch, self.device)
             with torch.amp.autocast("cuda", torch.bfloat16):
                 loss_dict = self.distiller(self.criterion, batch)
+            
+            if loss_dict.get("skip_batch", False):
+                print_rank(f"Skipping batch {batch_idx} due to missing gradient cache.")
+                skipped_batches += 1
+                continue
+            
             total_loss = loss_dict['loss'] / self.training_args.gradient_accumulation_steps
 
             if batch_idx == 0:
-                losses = {loss_type: [] for loss_type in loss_dict}
+                losses = {loss_type: [] for loss_type in loss_dict if loss_type != "skip_batch"}
             
             for loss_type in losses:
                 batch_loss = loss_dict.get(loss_type, torch.tensor(0.0))
-                losses[loss_type].append(batch_loss.detach().item())
+                if loss_type != "skip_batch":
+                    losses[loss_type].append(batch_loss.detach().item())
 
             total_loss.backward()
             
@@ -149,6 +157,9 @@ class Trainer:
                 
             # torch.cuda.empty_cache()
         progress_bar.close()
+        
+        if skipped_batches > 0:
+            print_rank(f"Epoch {epoch}: Skipped {skipped_batches} batches due to missing gradient cache.")
         
     def train(self):
         for epoch in range(self.training_args.num_train_epochs):

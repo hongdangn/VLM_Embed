@@ -9,7 +9,7 @@ from .span_propose import SpanProposeCriterion
 from .span_propose_attn import SpanProposeCriterionWeighted
 from .span_propose_attn_only_phrase import SpanProposeCriterionWeightedOnlyPhrase
 from .gvendi import GVendiVLMCriterion
-from .gvendi_topology_extract import GvendiTopologyExtract
+from .gvendi_topology_extract_checker import GvendiTopologyExtract
 
 criterion_list = {
     "contrastive_rkd": ContrastiveLossWithRKD,

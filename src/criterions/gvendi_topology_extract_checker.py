@@ -150,7 +150,7 @@ class GvendiTopologyExtract(nn.Module):
         self.io_executor = ThreadPoolExecutor(max_workers=4) 
 
         self.teacher_cache_dir = getattr(data_args, "teacher_cache_dir", None)
-        
+
         for n, p in distiller.teacher.named_parameters():
             p.requires_grad_(False)
 
@@ -197,8 +197,70 @@ class GvendiTopologyExtract(nn.Module):
             cache_path = os.path.join(cache_dir, f"{sid}.pt")
             torch.save({"grad_teacher": data}, cache_path)
 
+        futures = []
         for i, sid in enumerate(sample_ids):
-            self.io_executor.submit(save_task, str(sid), grad_teacher_cpu[i])
+            future = self.io_executor.submit(save_task, str(sid), grad_teacher_cpu[i])
+            futures.append(future)
+        
+        for future in futures:
+            future.result()
+
+    def _check_and_encode_missing_gradients(self, cache_dir, sample_ids, distiller, input_data):
+        if cache_dir is None:
+            return list(range(len(sample_ids))), True
+        
+        os.makedirs(cache_dir, exist_ok=True)
+        
+        missing_indices = []
+        for i, sid in enumerate(sample_ids):
+            cache_path = os.path.join(cache_dir, f"{sid}.pt")
+            if not os.path.exists(cache_path):
+                missing_indices.append(i)
+        
+        if not missing_indices:
+            return list(range(len(sample_ids))), True
+        
+        if missing_indices:
+            print(f"Found {len(missing_indices)} missing gradient caches out of {len(sample_ids)}. Re-encoding them...")
+            
+            teacher_model = distiller.teacher
+            teacher_model.eval()
+            
+            with torch.enable_grad():
+                # Process only missing samples
+                teacher_qry_input = input_data["teacher_inputs"]["qry"]
+                teacher_pos_input = input_data["teacher_inputs"]["pos"]
+                
+                # Filter to missing indices
+                if isinstance(teacher_qry_input, dict):
+                    missing_qry_input = {k: [v[i] for i in missing_indices] if isinstance(v, list) else v for k, v in teacher_qry_input.items()}
+                    missing_pos_input = {k: [v[i] for i in missing_indices] if isinstance(v, list) else v for k, v in teacher_pos_input.items()}
+                
+                t_qry_out = teacher_model.encode_input(missing_qry_input)
+                t_pos_out = teacher_model.encode_input(missing_pos_input)
+                
+                t_qry_reps, *_ = t_qry_out
+                t_pos_reps, *_ = t_pos_out
+                
+                t_per_sample = self._teacher_per_sample_signal(t_qry_reps, t_pos_reps)
+                
+                grad_teacher_raw = self.extractor.extract(teacher_model, t_per_sample)
+            
+            grad_teacher = F.normalize(self.proj_T(grad_teacher_raw), dim=-1)
+            
+            # Save the missing gradients
+            missing_sample_ids = [sample_ids[i] for i in missing_indices]
+            self._save_teacher_cache(cache_dir, missing_sample_ids, grad_teacher)
+        
+        # Verify all samples now exist
+        all_exist = True
+        for sid in sample_ids:
+            cache_path = os.path.join(cache_dir, f"{sid}.pt")
+            if not os.path.exists(cache_path):
+                all_exist = False
+                break
+        
+        return list(range(len(sample_ids))), all_exist
 
     def forward(
         self,
@@ -207,6 +269,23 @@ class GvendiTopologyExtract(nn.Module):
     ) -> Dict[str, torch.Tensor]:
 
         teacher_model = distiller.teacher
+        sample_ids = input_data.get("sample_ids", None)
+
+        if sample_ids is not None and self.teacher_cache_dir is not None:
+            _, has_all_samples = self._check_and_encode_missing_gradients(
+                self.teacher_cache_dir,
+                sample_ids,
+                distiller,
+                input_data
+            )
+            
+            if not has_all_samples:
+                print(f"WARNING: Could not encode all missing gradients for batch. Skipping batch with sample_ids: {sample_ids}")
+                log = {
+                    "loss": torch.tensor(0.0),
+                    "skip_batch": True,
+                }
+                return log
 
         teacher_qry_input = input_data["teacher_inputs"]["qry"]
         teacher_pos_input = input_data["teacher_inputs"]["pos"]
@@ -234,11 +313,12 @@ class GvendiTopologyExtract(nn.Module):
         if self.teacher_cache_dir is not None:
             self._save_teacher_cache(
                 self.teacher_cache_dir,
-                input_data.get("sample_ids", None),
+                sample_ids,
                 grad_teacher,
             )
 
         log = {
             "loss": torch.tensor(0.0),
+            "skip_batch": False,
         }
         return log
