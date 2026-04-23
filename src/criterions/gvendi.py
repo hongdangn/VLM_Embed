@@ -32,14 +32,14 @@ def _sq_euclidean(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
 def get_last_layer_id(model):
     layer_ids = []
 
-    for n, _ in model.named_parameters():
-        if "layers" in n:
+    for n, params in model.named_parameters():
+        if "layers" in n and params.requires_grad:
             split_name = n.split(".")
             for i, name in enumerate(split_name):
                 if "layers" in name:
                     layer_ids.append(int(split_name[i + 1]))
                     break
-
+    print("Extracting gradients from layers:", sorted(set(layer_ids)))
     return max(layer_ids)
 
 
