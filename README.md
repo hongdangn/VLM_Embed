@@ -24,7 +24,9 @@ cd VLM_Embed
 bash download_traindata.sh
 bash download_traindata_2.sh
 ```
-3. Fix some line code 
+3. Download gradient files from *https://huggingface.co/dangnguyens1/teacher_gradients/blob/main/qwenvl_2b_cls_vqa_grad.zip* and unzip it
+
+4. Fix some line code 
 
 Because of the error of code in **Transformers library**, run the following script to find the error and comment some lines: 
 
@@ -43,16 +45,15 @@ python fix_lib.py
 ## Training
 
 Just run the scripts in folder `scripts`
-- For run RKD: 
+- To run GVendi Distillation for `qwen2b_cls_grad`, you run: 
 ```bash
-bash scripts/train_RKD.sh
-bash scripts/train_distill_propose_V.sh
+bash scripts/test_gvendi.sh
 ```
-## Inference & Evaluation
-1. To evaluate our model on an MMEB dataset (e.g., MSCOCO_i2t), run:
-```bash 
-bash eval.sh
-```
+
+NOTE: 
+- You have to ensure that the PHASE 1 TRAINING script must be COMMENTED. You need to UNCOMMENT the PHASE 2 TRAINING script (I did it for you but you need to check it again in `test_gvendi.sh`)
+
+- In the `test_gvendi.sh`, please check the `--image_dir` and `--teacher_cache_dir` arguments: it's the path to the downloaded training images and the downloaded `qwen2b_cls_grad` gradients from HF respectively.
 
 ## Acknowledgement
 - We have adapted code from [VLM2Vec]([https://github.com/TIGER-AI-Lab/VLM2Vec]) and [B3](https://github.com/raghavlite/B3)
