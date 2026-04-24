@@ -4,11 +4,30 @@ from huggingface_hub import hf_hub_download
 
 # Danh sách zip file cần tải
 files = {
+    # Image classification datasets
     "ImageNet_1K.zip": "images_zip/ImageNet_1K.zip",
     "N24News.zip": "images_zip/N24News.zip",
     "SUN397.zip": "images_zip/SUN397.zip",
     "HatefulMemes.zip": "images_zip/HatefulMemes.zip",
     "VOC2007.zip": "images_zip/VOC2007.zip",
+    # VQA datasets
+    "OK-VQA.zip": "images_zip/OK-VQA.zip",
+    "A-OKVQA.zip": "images_zip/A-OKVQA.zip",
+    "DocVQA.zip": "images_zip/DocVQA.zip",
+    "InfographicsVQA.zip": "images_zip/InfographicsVQA.zip",
+    "ChartQA.zip": "images_zip/ChartQA.zip",
+    "Visual7W.zip": "images_zip/Visual7W.zip",
+    # Retrieval datasets
+    # "VisDial.zip": "images_zip/VisDial.zip",
+    # "CIRR.zip": "images_zip/CIRR.zip",
+    # "VisualNews_i2t.zip": "images_zip/VisualNews_i2t.zip",
+    # "VisualNews_t2i.zip": "images_zip/VisualNews_t2i.zip", 
+    # "MSCOCO_i2t.zip": "images_zip/MSCOCO_i2t.zip",
+    # "MSCOCO_t2i.zip": "images_zip/MSCOCO_t2i.zip",
+    # "NIGHTS.zip": "images_zip/NIGHTS.zip",
+    # "WebQA.zip": "images_zip/WebQA.zip",
+    # # Grounding datasets
+    # "MSCOCO.zip": "images_zip/MSCOCO.zip",
 }
 
 dataset = "TIGER-Lab/MMEB-train"
