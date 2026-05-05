@@ -1,6 +1,8 @@
 from huggingface_hub import HfApi, HfFolder, Repository, create_repo
 import os
 import time
+from dotenv import load_dotenv
+load_dotenv()
 
 def push_to_hub(repo_name=None, token=None, commit_message="Upload model", 
                 local_dir="./temp_model", private=False):
@@ -105,10 +107,10 @@ def push_zip_to_hub(repo_name=None, token=None, zip_file=None,
         print("  3. Use: python split_zip.py <zip_file> <chunk_size_mb>")
         return False
     
-if __name__ == "__main__":
+if __name__ == "__main__":    
     push_to_hub(
-        repo_name="dangnguyens1/meta_train",
-        token="",
+        repo_name="dangnguyens1/gvendi",
+        token=os.getenv("hf_token"),
         local_dir="/mnt/disk1/backup_user/dang.nh4/VLM_Embed/training"
     )
     

@@ -1,11 +1,12 @@
-MODEL_NAME=/mnt/disk1/backup_user/dang.nh4/VLM_Embed/training/gvendi_phase2_vqa_fastvlm/checkpoint-epoch-0
+MODEL_NAME=/mnt/disk1/backup_user/dang.nh4/VLM_Embed/meta_train/rkd_meta_vqa/checkpoint-epoch-0
 OUTPUT_DIR="./eval-res"
 DATASET_NAME="TIGER-Lab/MMEB-eval"
 IMAGE_DIR="/mnt/disk1/backup_user/dang.nh4/eval-data"
-BATCH_SIZE=48
+BATCH_SIZE=36
 
 # export CUDA_VISIBLE_DEVICES=2
 datasets=("OK-VQA" "A-OKVQA" "DocVQA" "InfographicsVQA" "ChartQA" "Visual7W")
+# datasets=("OK-VQA")
 # datasets=(Visual7W)
 
 echo "Starting comprehensive model evaluation for $MODEL_NAME"
