@@ -24,10 +24,10 @@ torchrun --standalone \
     --dataset_name "TIGER-Lab/MMEB-train" \
     --subset_name "VisDial" "CIRR" "VisualNews_i2t" "VisualNews_t2i" "MSCOCO_i2t" "MSCOCO_t2i" "NIGHTS" "WebQA" \
     --dataset_split "original" \
-    --image_dir "/mnt/disk1/backup_user/dang.nh4/vlm2vec_train/MMEB-train" \
+    --image_dir "./vlm2vec_train/MMEB-train" \
     --percent_data 1.0 \
     --output_dir "training/gvendi_ret" \
-    --per_device_train_batch_size 8 \
+    --per_device_train_batch_size 16 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \
     --num_train_epochs 1 \
@@ -69,10 +69,10 @@ torchrun --standalone \
 #     --dataset_name "TIGER-Lab/MMEB-train" \
 #     --subset_name "VisDial" "CIRR" "VisualNews_i2t" "VisualNews_t2i" "MSCOCO_i2t" "MSCOCO_t2i" "NIGHTS" "WebQA" \
 #     --dataset_split "original" \
-#     --image_dir "/mnt/disk1/backup_user/dang.nh4/vlm2vec_train/MMEB-train" \
+#     --image_dir "./vlm2vec_train/MMEB-train" \
 #     --percent_data 1.0 \
 #     --output_dir "training/gvendi_phase2_ret_fastvlm" \
-#     --per_device_train_batch_size 8 \
+#     --per_device_train_batch_size 16 \
 #     --gradient_accumulation_steps 1 \
 #     --learning_rate 1e-4 \
 #     --num_train_epochs 1 \
