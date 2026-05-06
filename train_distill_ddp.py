@@ -9,7 +9,7 @@ import os
 import sys
 from tqdm import tqdm 
 import math
-
+import itertools
 import torch
 import torch.nn as nn 
 import torch.nn.functional as F
@@ -264,9 +264,15 @@ def main():
             p.data = p.data.to(torch.bfloat16)
             num_trainable_vision += p.numel()
     print_rank(f"Number of trainable vision parameters: {num_trainable_vision}")
-    
-    optimizer = AdamW(
+    criterion = build_criterion(data_args, training_args, distiller)
+
+    trainable_params = itertools.chain(
         distiller.student.parameters(),
+        criterion.parameters()
+    )
+
+    optimizer = AdamW(
+        trainable_params,
         lr=training_args.learning_rate,
         weight_decay=training_args.weight_decay,
         betas=(0.9, 0.999),
@@ -302,7 +308,6 @@ def main():
 
     # gpu_id = int(os.environ['LOCAL_RANK'])
     # distiller = distiller.to(torch.device(f'cuda:{gpu_id}'))
-    criterion = build_criterion(data_args, training_args, distiller)
     trainer = Trainer(distiller, train_dataloader, optimizer, lr_scheduler, criterion, model_args, training_args)
     trainer.train()
     
