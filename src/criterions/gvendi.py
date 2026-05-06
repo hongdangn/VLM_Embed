@@ -150,11 +150,25 @@ class VLMGradientExtractor:
         params = self._tail_params(model)
         return self._per_sample_flat_grads(params, per_sample_loss, retain_graph)
 
+def compute_erank_fast(batch_tensors):
+    X = batch_tensors.view(batch_tensors.size(0), -1).float()
+    
+    K = X @ X.T  # Gram matrix
+    
+    trace = torch.trace(K)              # sum lambda_i
+    frob_sq = torch.sum(K * K)          # sum lambda_i^2
+    
+    if frob_sq == 0:
+        return 0.0
+        
+    erank = trace / torch.sqrt(frob_sq)
+    return erank.item()
+
 class GVendiVLMCriterion(nn.Module):
 
     def __init__(self, data_args, training_args, distiller):
         super().__init__()
-
+        self.global_step: int = 0
         if dist.is_initialized():
             self.world_size   = dist.get_world_size()
             self.process_rank = dist.get_rank()
@@ -180,6 +194,18 @@ class GVendiVLMCriterion(nn.Module):
                                            block_size=cfg.block_size)
         self.pj     = LinearProjector(cfg.proj_dim)
         self.book = GVendiCodebook(cfg.K_codebook, cfg.proj_dim)
+        
+        optimizer = distiller.optimizer if hasattr(distiller, "optimizer") else None
+        if optimizer is not None:
+            # Lấy ra danh sách các tham số cần train
+            book_params = [p for p in self.book.parameters() if p.requires_grad]
+            
+            # Chỉ add vào nếu thực sự có tham số
+            if book_params:
+                optimizer.add_param_group({
+                    "params": book_params,
+                    # "lr": 1e-4  # Mở comment nếu cần set learning rate riêng biệt
+                })
 
         phase1_ckpt = getattr(training_args, "gvendi_phase1_ckpt", None)
         if phase1_ckpt and os.path.isfile(phase1_ckpt):
@@ -248,10 +274,9 @@ class GVendiVLMCriterion(nn.Module):
     @staticmethod
     def _student_per_sample_signal(
         s_qry: torch.Tensor,
-        t_qry: torch.Tensor,
-    ) -> torch.Tensor:                          # (b,)
-        d = min(s_qry.shape[-1], t_qry.shape[-1])
-        return ((s_qry[..., :d] - t_qry.detach()[..., :d]) ** 2).sum(dim=-1)
+        s_qos: torch.Tensor,
+    ) -> torch.Tensor:            # (b,)
+        return ((s_qry - s_qos) ** 2).sum(dim=-1)
 
     @staticmethod
     def _pairwise_dist(x: torch.Tensor) -> torch.Tensor:
@@ -321,7 +346,7 @@ class GVendiVLMCriterion(nn.Module):
         # for n, p in student_model.named_parameters():
         #     print(n)
 
-        s_per_sample = self._student_per_sample_signal(s_qry_reps, t_qry_reps)
+        s_per_sample = self._student_per_sample_signal(s_qry_reps, s_pos_reps)
 
         # with torch.enable_grad():
         gs_raw = self.extractor.extract(
@@ -362,6 +387,54 @@ class GVendiVLMCriterion(nn.Module):
             + self.w_gvendi * L_gvendi
         )
 
+        # Save training grad each step 
+        if self.process_rank == 0:
+            if not os.path.exists(distiller.training_args.output_dir):
+                os.makedirs(distiller.training_args.output_dir, exist_ok=True)
+            if not os.path.exists(os.path.join(distiller.training_args.output_dir, 'step_eranks')):
+                os.makedirs(os.path.join(distiller.training_args.output_dir, 'step_eranks'), exist_ok=True)
+            if not os.path.exists(os.path.join(distiller.training_args.output_dir, 'step_align_eranks')):
+                os.makedirs(os.path.join(distiller.training_args.output_dir, 'step_align_eranks'), exist_ok=True)
+            if not os.path.exists(os.path.join(distiller.training_args.output_dir, 'teacher_step_eranks')):
+                os.makedirs(os.path.join(distiller.training_args.output_dir, 'teacher_step_eranks'), exist_ok=True)
+            if not os.path.exists(os.path.join(distiller.training_args.output_dir, 'step_grads')):
+                os.makedirs(os.path.join(distiller.training_args.output_dir, 'step_grads'), exist_ok=True)
+            if not os.path.exists(os.path.join(distiller.training_args.output_dir, 'step_align_grads')):
+                os.makedirs(os.path.join(distiller.training_args.output_dir, 'step_align_grads'), exist_ok=True)
+            if not os.path.exists(os.path.join(distiller.training_args.output_dir, 'teacher_step_grads')):
+                os.makedirs(os.path.join(distiller.training_args.output_dir, 'teacher_step_grads'), exist_ok=True)
+
+            save_erank_path = os.path.join(distiller.training_args.output_dir, 
+                                     'step_eranks',
+                                     f"step_{self.global_step}_erank.pt")
+            save_grad_path = os.path.join(distiller.training_args.output_dir, 
+                                     'step_grads',
+                                     f"step_{self.global_step}_grads.pt")
+            torch.save(gs_projected.detach().cpu(), save_grad_path)
+            batched_gs_erank = compute_erank_fast(gs_projected)
+            torch.save(batched_gs_erank, save_erank_path)
+
+            save_align_erank_path = os.path.join(distiller.training_args.output_dir,
+                                        'step_align_eranks',
+                                        f"step_{self.global_step}_erank.pt")
+            save_align_grad_path = os.path.join(distiller.training_args.output_dir,
+                                        'step_align_grads',
+                                        f"step_{self.global_step}_grads.pt")
+            torch.save(gs_aligned.detach().cpu(), save_align_grad_path)
+            batched_align_erank = compute_erank_fast(gs_aligned)
+            torch.save(batched_align_erank, save_align_erank_path)
+            
+            save_tea_erank_path = os.path.join(distiller.training_args.output_dir, 
+                                     'teacher_step_eranks',
+                                     f"step_{self.global_step}_erank.pt")
+            save_tea_grad_path = os.path.join(distiller.training_args.output_dir, 
+                                     'teacher_step_grads',
+                                     f"step_{self.global_step}_grads.pt")
+            torch.save(gt_projected.detach().cpu(), save_tea_grad_path)
+            batched_gt_erank = compute_erank_fast(gt_projected)
+            torch.save(batched_gt_erank, save_tea_erank_path)
+            self.global_step += 1
+
         return {
             "loss":              total_loss,
             "contrastive_loss":  L_contrastive,
@@ -370,3 +443,11 @@ class GVendiVLMCriterion(nn.Module):
             "gvendi_commit":     L_commit,
             "gvendi_total":      L_gvendi,
         }
+        # return {
+        #     "loss":              total_loss,
+        #     "contrastive_loss":  L_contrastive,
+        #     "rkd_loss":          torch.tensor(0.0, device=device),  # L_rkd,
+        #     "gvendi_ot":         torch.tensor(0.0, device=device),
+        #     "gvendi_commit":     torch.tensor(0.0, device=device),
+        #     "gvendi_total":      torch.tensor(0.0, device=device),
+        # }

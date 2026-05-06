@@ -8,7 +8,7 @@ from src.arguments import ModelArguments, DataArguments, TrainingArguments
 from transformers import HfArgumentParser, AutoConfig
 
 from src.model.model import MMEBModel
-from src.data.dataset.mmeb_dataset import EvalDataset
+from src.data.dataset.mmeb_dataset import EvalDataset, FlickrDataset
 from src.data.collator.eval_collator import EvalCollator
 from torch.utils.data import DataLoader
 import torch

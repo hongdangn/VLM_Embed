@@ -1,14 +1,14 @@
 python eval_mmeb.py \
-    --model_name ./training/gvendi_kmeans_phase2/checkpoint-final\
-    --encode_output_path ./MMEB-evaloutputs/gvendi_kmeans3/ \
+    --model_name ./pretrained_models/sft_fastvlm_vqa\
+    --encode_output_path ./MMEB-evaloutputs/sft_fastvlm_vqa/ \
     --lora --lora_r 64 --lora_alpha 64 \
     --pooling eos \
     --model_backbone llava_qwen2 \
     --normalize True \
     --bf16 \
     --dataset_name TIGER-Lab/MMEB-eval \
-    --subset_name  "ImageNet-1K" "N24News" "HatefulMemes" "VOC2007" "SUN397" "Place365" "ImageNet-A" "ImageNet-R" "ObjectNet" "Country211"\
+    --subset_name  "OK-VQA" "A-OKVQA"\
     --dataset_split test \
     --per_device_eval_batch_size 10 \
-    --image_dir "/home/gdi-user/enguyen/research_vllm/test/VLM_Embed/eval_images" \
+    --image_dir "./eval_images" \
     --tgt_prefix_mod

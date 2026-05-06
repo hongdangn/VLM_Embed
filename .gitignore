@@ -17,3 +17,6 @@ teacher_gradients/
 meta_train/
 eval_results/
 note.txt
+pretrained_models/
+MMEB-evaloutputs/
+eval_images/

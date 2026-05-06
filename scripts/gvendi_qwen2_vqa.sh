@@ -68,9 +68,9 @@ torchrun --standalone \
     --dataset_name "TIGER-Lab/MMEB-train" \
     --subset_name "OK-VQA" "A-OKVQA" "DocVQA" "InfographicsVQA" "ChartQA" "Visual7W" \
     --dataset_split "original" \
-    --image_dir "/mnt/disk1/backup_user/dang.nh4/vlm2vec_train/MMEB-train" \
+    --image_dir "./vlm2vec_train/MMEB-train" \
     --percent_data 1.0 \
-    --output_dir "training/gvendi_phase2_vqa_fastvlm" \
+    --output_dir "training/gvendi_phase2_imagenet1k_fastvlm" \
     --per_device_train_batch_size 8 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \

@@ -485,7 +485,7 @@ class MMEBModel(nn.Module):
                     )
                 else:   
                     lora_model.base_model.model.model.mm_projector.load_state_dict(
-                        torch.load(projector_path)
+                        torch.load(projector_path, map_location="cpu")
                     )
                 
                 print("Successfully loading the projector's weight from local path")
