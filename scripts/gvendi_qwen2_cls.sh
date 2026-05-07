@@ -1,13 +1,15 @@
 NUM_GPUS_PER_NODE=1
-teacher_cache_dir="./teacher_gradients/qwen2b_cls_grad/"
+# teacher_cache_dir="./teacher_gradients/qwen2b_cls_grad/"
+teacher_cache_dir="./teacher_gradients/gvendi_B3_Qwen2_2B_VOC2007_phase1"
 GVENDI_CODEBOOK_METHOD="${GVENDI_CODEBOOK_METHOD:-sinkhorn}"
 
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 
-OUTPUT_DIR="./training/gvendi_SUN397_fastvlm"
-# OUTPUT_DIR="./training/sft_SUN397_fastvlm"
+# OUTPUT_DIR="./training/gvendi_VOC2007_fastvlm"
+# OUTPUT_DIR="./training/gvendi_VOC2007_fastvlm_contrative_signal"
+OUTPUT_DIR="./training/sft_VOC2007_fastvlm_contrative_signal"
 
 # phase 2 training
 TRAIN_SCRIPT="train_distill_ddp.py"
@@ -25,7 +27,7 @@ torchrun --standalone \
     --model_backbone "llava_qwen2" \
     --pooling "eos" \
     --dataset_name "TIGER-Lab/MMEB-train" \
-    --subset_name "SUN397" \
+    --subset_name "VOC2007" \
     --dataset_split "original" \
     --image_dir "./vlm2vec_train/MMEB-train" \
     --percent_data 1.0 \

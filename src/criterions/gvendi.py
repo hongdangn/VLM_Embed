@@ -15,7 +15,7 @@ import torch.distributed as dist
 class VLMDistillConfig:
     proj_dim:        int   = 512
     block_size:      int   = 4096
-    K_codebook:      int   = 60
+    K_codebook:      int   = 256
     sinkhorn_reg:    float = 0.05
     sinkhorn_iters:  int   = 100
     lam_ot:          float = 1.2
@@ -279,6 +279,39 @@ class GVendiVLMCriterion(nn.Module):
         return ((s_qry - s_qos) ** 2).sum(dim=-1)
 
     @staticmethod
+    def _per_sample_signal_local(
+        s_qry: torch.Tensor,  # (b, d)
+        s_pos: torch.Tensor,  # (b, d)
+        temperature: float = 0.02
+    ) -> torch.Tensor:
+        b = s_qry.size(0)
+        
+        # 1. Lấy toàn bộ s_pos trong batch làm mẫu âm (Negative)
+        # BẮT BUỘC DETACH để ngắt đồ thị, chặn gradient truyền chéo sang mẫu khác
+        s_pos_detached = s_pos.detach()
+        
+        # Ma trận điểm số (b, b): qry[i] tương tác với tất cả pos[j]
+        scores = torch.matmul(s_qry, s_pos_detached.T) / temperature
+        scores = scores.to(s_qry.dtype)  # Chuyển về cùng dtype để tránh lỗi khi s_qry là fp16
+        # 2. Tính điểm số riêng cho cặp Positive thực sự (KHÔNG DETACH)
+        # Phép tính này chỉ xảy ra 1-1 giữa qry[i] và pos[i]
+        # Giúp s_pos nhận được gradient mà không lây sang mẫu khác
+        attached_pos_scores = (s_qry * s_pos).sum(dim=-1) / temperature
+        
+        # 3. Ghi đè điểm số có gradient vào đúng đường chéo của ma trận scores
+        # (Đường chéo chính là vị trí i == j)
+        scores = scores.clone()  # Clone để không làm vỡ autograd graph
+        indices = torch.arange(b, device=s_qry.device)
+        scores[indices, indices] = attached_pos_scores
+        
+        # 4. Tính InfoNCE loss cho từng mẫu
+        # Trả về tensor (b,)
+        loss_fct = nn.CrossEntropyLoss(reduction='none')
+        per_sample_loss = loss_fct(scores, indices)
+        
+        return per_sample_loss
+
+    @staticmethod
     def _pairwise_dist(x: torch.Tensor) -> torch.Tensor:
         n = (x ** 2).sum(1, keepdim=True)
         return (n + n.T - 2.0 * x @ x.T).clamp(min=0.0)
@@ -319,9 +352,11 @@ class GVendiVLMCriterion(nn.Module):
         device = student_qry_input["input_ids"].device
         
         with torch.no_grad():
-            teacher_model.eval()
-            t_qry_reps, *_ = teacher_model.encode_input(teacher_qry_input)
-            t_pos_reps, *_ = teacher_model.encode_input(teacher_pos_input)
+            pass
+            # teacher_model.eval()
+            # t_qry_reps, *_ = teacher_model.encode_input(teacher_qry_input)
+            # t_pos_reps, *_ = teacher_model.encode_input(teacher_pos_input)
+
 
         s_qry_reps, *_ = student_model.encode_input(student_qry_input)
         s_pos_reps, *_ = student_model.encode_input(student_pos_input)
@@ -335,10 +370,10 @@ class GVendiVLMCriterion(nn.Module):
         targets *= all_s_qry.size(0) // all_s_pos.size(0)
         L_contrastive = nn.CrossEntropyLoss()(scores / distiller.temperature, targets)
 
-        L_rkd = (
-            self._rkd_distance(s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
-            + self._rkd_angle  (s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
-        ) / 2.0
+        # L_rkd = (
+        #     self._rkd_distance(s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
+        #     + self._rkd_angle  (s_qry_reps, s_pos_reps, t_qry_reps, t_pos_reps)
+        # ) / 2.0
         
         sample_ids = input_data["sample_ids"]
         gt_projected = self._load_cached_teacher(sample_ids, device)  
@@ -346,8 +381,8 @@ class GVendiVLMCriterion(nn.Module):
         # for n, p in student_model.named_parameters():
         #     print(n)
 
-        s_per_sample = self._student_per_sample_signal(s_qry_reps, s_pos_reps)
-
+        # s_per_sample = self._student_per_sample_signal(s_qry_reps, s_pos_reps)
+        s_per_sample = self._per_sample_signal_local(s_qry_reps, s_pos_reps)
         # with torch.enable_grad():
         gs_raw = self.extractor.extract(
             student_model,
@@ -359,32 +394,32 @@ class GVendiVLMCriterion(nn.Module):
         
         gs_aligned   = self.pj.to(device)(gs_projected)                       
 
-        C     = self.book.normalized.to(device)                     # (K, d)
-        cost  = _sq_euclidean(gt_projected, C)                      # (b, K)
-        with torch.no_grad():
-            k_star = cost.argmin(dim=1)                             # (b,)
+        # C     = self.book.normalized.to(device)                     # (K, d)
+        # cost  = _sq_euclidean(gt_projected, C)                      # (b, K)
+        # with torch.no_grad():
+        #     k_star = cost.argmin(dim=1)                             # (b,)
 
-        if cfg.codebook_method == "sinkhorn":
-            with torch.no_grad():
-                gamma = _sinkhorn_log(cost, cfg.sinkhorn_reg, cfg.sinkhorn_iters)
-            L_OT = (gamma * cost).sum()
-        elif cfg.codebook_method == "kmeans":
-            L_OT = cost.gather(1, k_star.unsqueeze(1)).sum()
-        else:
-            raise ValueError(
-                f"Unsupported gvendi_codebook_method: {cfg.codebook_method}. "
-                "Expected 'sinkhorn' or 'kmeans'."
-            )
+        # if cfg.codebook_method == "sinkhorn":
+        #     with torch.no_grad():
+        #         gamma = _sinkhorn_log(cost, cfg.sinkhorn_reg, cfg.sinkhorn_iters)
+        #     L_OT = (gamma * cost).sum()
+        # elif cfg.codebook_method == "kmeans":
+        #     L_OT = cost.gather(1, k_star.unsqueeze(1)).sum()
+        # else:
+        #     raise ValueError(
+        #         f"Unsupported gvendi_codebook_method: {cfg.codebook_method}. "
+        #         "Expected 'sinkhorn' or 'kmeans'."
+        #     )
 
-        centroid_targets = C.detach()[k_star]                       # (b, d)
-        L_commit = F.mse_loss(gs_aligned, centroid_targets, reduction="sum")
+        # centroid_targets = C.detach()[k_star]                       # (b, d)
+        # L_commit = F.mse_loss(gs_aligned, centroid_targets, reduction="sum")
 
-        L_gvendi = cfg.lam_ot * L_OT + cfg.lam_commit * L_commit
+        # L_gvendi = cfg.lam_ot * L_OT + cfg.lam_commit * L_commit
 
         total_loss = (
             L_contrastive
-            + self.w_rkd    * L_rkd
-            + self.w_gvendi * L_gvendi
+            # + self.w_rkd    * L_rkd
+            # + self.w_gvendi * L_gvendi
         )
 
         # Save training grad each step 
@@ -435,19 +470,19 @@ class GVendiVLMCriterion(nn.Module):
             torch.save(batched_gt_erank, save_tea_erank_path)
             self.global_step += 1
 
-        return {
-            "loss":              total_loss,
-            "contrastive_loss":  L_contrastive,
-            "rkd_loss":          L_rkd,
-            "gvendi_ot":         L_OT,
-            "gvendi_commit":     L_commit,
-            "gvendi_total":      L_gvendi,
-        }
         # return {
         #     "loss":              total_loss,
         #     "contrastive_loss":  L_contrastive,
-        #     "rkd_loss":          torch.tensor(0.0, device=device),  # L_rkd,
-        #     "gvendi_ot":         torch.tensor(0.0, device=device),
-        #     "gvendi_commit":     torch.tensor(0.0, device=device),
-        #     "gvendi_total":      torch.tensor(0.0, device=device),
+        #     "rkd_loss":          L_rkd,
+        #     "gvendi_ot":         L_OT,
+        #     "gvendi_commit":     L_commit,
+        #     "gvendi_total":      L_gvendi,
         # }
+        return {
+            "loss":              total_loss,
+            "contrastive_loss":  L_contrastive,
+            "rkd_loss":          torch.tensor(0.0, device=device),  # L_rkd,
+            "gvendi_ot":         torch.tensor(0.0, device=device),
+            "gvendi_commit":     torch.tensor(0.0, device=device),
+            "gvendi_total":      torch.tensor(0.0, device=device),
+        }

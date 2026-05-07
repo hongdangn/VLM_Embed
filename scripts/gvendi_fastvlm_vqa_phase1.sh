@@ -2,7 +2,7 @@ NUM_GPUS_PER_NODE=1
 
 TRAIN_SCRIPT="gvendi_phase1.py"
 # teacher_cache_dir="./teacher_gradients/sft_fastvlm_SUN397_phase1"
-teacher_cache_dir="./teacher_gradients/gvendi_fastvlm_SUN397_phase1"
+teacher_cache_dir="./teacher_gradients/gvendi_B3_Qwen2_2B_VOC2007_phase1"
 GVENDI_CODEBOOK_METHOD="${GVENDI_CODEBOOK_METHOD:-sinkhorn}"
 
 export TORCH_DISTRIBUTED_DEBUG=DETAIL
@@ -13,23 +13,23 @@ export CUDA_VISIBLE_DEVICES=0
 torchrun --standalone \
     --nproc_per_node=$NUM_GPUS_PER_NODE $TRAIN_SCRIPT \
     --model_name apple/FastVLM-0.5B \
-    --teacher_model_name "training/gvendi_SUN397_fastvlm/checkpoint-epoch-0" \
+    --teacher_model_name "raghavlite/B3_Qwen2_2B" \
     --lora True \
     --teacher_lora True \
     --lora_r 64 \
     --lora_alpha 64 \
     --teacher_lora_r 8 \
     --teacher_pooling "eos" \
-    --teacher_backbone "llava_qwen2" \
+    --teacher_backbone "qwen2_vl" \
     --model_backbone "llava_qwen2" \
     --pooling "eos" \
     --dataset_name "TIGER-Lab/MMEB-train" \
-    --subset_name "SUN397" \
+    --subset_name "VOC2007" \
     --dataset_split "original" \
     --image_dir "./vlm2vec_train/MMEB-train" \
     --percent_data 1.0 \
-    --output_dir "training/sft_fastvlm_vqa_phase1" \
-    --per_device_train_batch_size 32 \
+    --output_dir "training/gvendi_VOC2007_B3_Qwen2_2B_phase1" \
+    --per_device_train_batch_size 8 \
     --gradient_accumulation_steps 1 \
     --learning_rate 1e-4 \
     --num_train_epochs 1 \

@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 random.seed(40)  # Đặt seed để kết quả có thể tái lập được
 
 # 1. Khai báo 3 folder (bạn điều chỉnh lại path cho chính xác nhé)
-folder_sft = "training/sft_SUN397_fastvlm/step_eranks"
-folder_gvendi = "training/gvendi_SUN397_fastvlm/step_align_eranks"
-folder_teacher = "training/gvendi_SUN397_fastvlm/teacher_step_eranks"
+folder_sft = "training/sft_VOC2007_fastvlm_contrative_signal/step_eranks"
+folder_gvendi = "training/gvendi_VOC2007_fastvlm_contrative_signal/step_align_eranks"
+folder_teacher = "training/gvendi_VOC2007_fastvlm_contrative_signal/teacher_step_eranks"
 
 def get_step(filename):
     match = re.search(r"step_(\d+)_erank\.pt", filename)
@@ -44,13 +44,13 @@ if not common_steps:
 
 # 3. Lọc lấy các step ở giữa và cuối (ví dụ: bỏ qua 50% step đầu tiên)
 mid_point = len(common_steps) // 2
-# candidate_steps = common_steps[mid_point:]
-candidate_steps = common_steps
+candidate_steps = common_steps[mid_point:]
+# candidate_steps = common_steps
 
 # Random chọn ra N steps (ví dụ: 8 steps để lên biểu đồ không bị rối)
 num_samples = min(50, len(candidate_steps))
 # sampled_steps = sorted(random.sample(candidate_steps, num_samples))
-sampled_steps = candidate_steps
+# sampled_steps = candidate_steps
 
 print(f"Các steps được chọn để visualize: {sampled_steps}")
 

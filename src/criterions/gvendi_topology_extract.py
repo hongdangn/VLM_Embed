@@ -201,6 +201,39 @@ class GvendiTopologyExtract(nn.Module):
         teacher_pos_reps: torch.Tensor,
     ) -> torch.Tensor:
         return ((teacher_qry_reps - teacher_pos_reps) ** 2).sum(dim=-1)
+    
+    @staticmethod
+    def _per_sample_signal_local(
+        s_qry: torch.Tensor,  # (b, d)
+        s_pos: torch.Tensor,  # (b, d)
+        temperature: float = 0.02
+    ) -> torch.Tensor:
+        b = s_qry.size(0)
+        
+        # 1. Lấy toàn bộ s_pos trong batch làm mẫu âm (Negative)
+        # BẮT BUỘC DETACH để ngắt đồ thị, chặn gradient truyền chéo sang mẫu khác
+        s_pos_detached = s_pos.detach()
+        
+        # Ma trận điểm số (b, b): qry[i] tương tác với tất cả pos[j]
+        scores = torch.matmul(s_qry, s_pos_detached.T) / temperature
+        
+        # 2. Tính điểm số riêng cho cặp Positive thực sự (KHÔNG DETACH)
+        # Phép tính này chỉ xảy ra 1-1 giữa qry[i] và pos[i]
+        # Giúp s_pos nhận được gradient mà không lây sang mẫu khác
+        attached_pos_scores = (s_qry * s_pos).sum(dim=-1) / temperature
+        
+        # 3. Ghi đè điểm số có gradient vào đúng đường chéo của ma trận scores
+        # (Đường chéo chính là vị trí i == j)
+        scores = scores.clone()  # Clone để không làm vỡ autograd graph
+        indices = torch.arange(b, device=s_qry.device)
+        scores[indices, indices] = attached_pos_scores
+        
+        # 4. Tính InfoNCE loss cho từng mẫu
+        # Trả về tensor (b,)
+        loss_fct = nn.CrossEntropyLoss(reduction='none')
+        per_sample_loss = loss_fct(scores, indices)
+        
+        return per_sample_loss
 
     def _save_teacher_cache(self, cache_dir, sample_ids, grad_teacher):
         os.makedirs(cache_dir, exist_ok=True)
@@ -234,7 +267,10 @@ class GvendiTopologyExtract(nn.Module):
             t_qry_reps, *_ = t_qry_out
             t_pos_reps, *_ = t_pos_out
 
-            t_per_sample = self._teacher_per_sample_signal(
+            # t_per_sample = self._teacher_per_sample_signal(
+            #     t_qry_reps, t_pos_reps
+            # )
+            t_per_sample = self._per_sample_signal_local(
                 t_qry_reps, t_pos_reps
             )
 
